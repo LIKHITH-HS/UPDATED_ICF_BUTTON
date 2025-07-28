@@ -1,0 +1,597 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Monitoring{% endblock %}
+{% block page_title %}System Monitoring{% endblock %}
+
+{% block content %}
+<!-- Performance Overview -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Performance Overview
+                </h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow">
+                        <a class="dropdown-item" href="#" onclick="refreshAllMetrics()">
+                            <i class="fas fa-sync"></i> Refresh All
+                        </a>
+                        <a class="dropdown-item" href="#" onclick="exportMetrics()">
+                            <i class="fas fa-download"></i> Export Data
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if performance_metrics %}
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="health-score-circle" data-score="{{ performance_metrics.health_score }}">
+                                <span class="health-score-text">{{ performance_metrics.health_score }}</span>
+                            </div>
+                            <h6 class="mt-2">Health Score</h6>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <!-- Alerts -->
+                        {% if performance_metrics.alerts %}
+                        <div class="mb-3">
+                            <h6 class="text-danger">
+                                <i class="fas fa-exclamation-triangle"></i> Active Alerts
+                            </h6>
+                            {% for alert in performance_metrics.alerts %}
+                            <div class="alert alert-danger alert-sm py-2">
+                                <i class="fas fa-exclamation-circle"></i> {{ alert }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Recommendations -->
+                        {% if performance_metrics.recommendations %}
+                        <div class="mb-3">
+                            <h6 class="text-info">
+                                <i class="fas fa-lightbulb"></i> Recommendations
+                            </h6>
+                            <ul class="list-unstyled">
+                                {% for recommendation in performance_metrics.recommendations %}
+                                <li class="mb-1">
+                                    <i class="fas fa-arrow-right text-info"></i> {{ recommendation }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        {% if not performance_metrics.alerts and not performance_metrics.recommendations %}
+                        <div class="text-center text-success">
+                            <i class="fas fa-check-circle fa-3x mb-3"></i>
+                            <h5>System Running Optimally</h5>
+                            <p class="text-muted">No issues detected. All systems are performing well.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-chart-line fa-3x mb-3"></i>
+                    <h5>Performance Data Loading...</h5>
+                    <p>Please wait while we collect performance metrics.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Health -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-server"></i>
+                    System Health
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if system_health %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-secondary">System Resources</h6>
+                        {% set system = system_health.system %}
+
+                        <!-- CPU Usage -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>CPU Usage</span>
+                                <span>{{ "%.1f"|format(system.cpu_percent or 0) }}%</span>
+                            </div>
+                            <div class="progress">
+                                {% set cpu_class = 'bg-success' %}
+                                {% if system.cpu_percent > 80 %}
+                                    {% set cpu_class = 'bg-danger' %}
+                                {% elif system.cpu_percent > 60 %}
+                                    {% set cpu_class = 'bg-warning' %}
+                                {% endif %}
+                                <div class="progress-bar {{ cpu_class }}"
+                                    style="width: {{ system.cpu_percent or 0 }}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Memory Usage -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Memory Usage</span>
+                                <span>{{ "%.1f"|format(system.memory_percent or 0) }}%</span>
+                            </div>
+                            <div class="progress">
+                                {% set memory_class = 'bg-success' %}
+                                {% if system.memory_percent > 85 %}
+                                    {% set memory_class = 'bg-danger' %}
+                                {% elif system.memory_percent > 70 %}
+                                    {% set memory_class = 'bg-warning' %}
+                                {% endif %}
+                                <div class="progress-bar {{ memory_class }}"
+                                    style="width: {{ system.memory_percent or 0 }}%"></div>
+                            </div>
+                            <small class="text-muted">
+                                {{ "%.1f"|format(system.memory_used_gb or 0) }}GB / {{
+                                "%.1f"|format(system.memory_total_gb or 0) }}GB
+                            </small>
+                        </div>
+
+                        <!-- Disk Usage -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Disk Usage</span>
+                                <span>{{ "%.1f"|format(system.disk_percent or 0) }}%</span>
+                            </div>
+                            <div class="progress">
+                                {% set disk_class = 'bg-success' %}
+                                {% if system.disk_percent > 90 %}
+                                    {% set disk_class = 'bg-danger' %}
+                                {% elif system.disk_percent > 80 %}
+                                    {% set disk_class = 'bg-warning' %}
+                                {% endif %}
+                                <div class="progress-bar {{ disk_class }}"
+                                    style="width: {{ system.disk_percent or 0 }}%"></div>
+                            </div>
+                            <small class="text-muted">
+                                {{ "%.1f"|format(system.disk_used_gb or 0) }}GB / {{ "%.1f"|format(system.disk_total_gb
+                                or 0) }}GB
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="text-secondary">Process Metrics</h6>
+                        {% set process = system_health.process %}
+
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>Process CPU</span>
+                                <span
+                                    class="badge bg-{{ 'danger' if process.cpu_percent > 50 else 'warning' if process.cpu_percent > 25 else 'success' }}">
+                                    {{ "%.1f"|format(process.cpu_percent or 0) }}%
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>Process Memory</span>
+                                <span
+                                    class="badge bg-{{ 'danger' if process.memory_percent > 10 else 'warning' if process.memory_percent > 5 else 'success' }}">
+                                    {{ "%.1f"|format(process.memory_mb or 0) }}MB
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>Threads</span>
+                                <span class="badge bg-info">{{ process.num_threads or 0 }}</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>File Descriptors</span>
+                                <span class="badge bg-secondary">{{ process.num_fds or 0 }}</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                Last updated: {{ system_health.timestamp[:19] if system_health.timestamp else 'Unknown'
+                                }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-server fa-2x mb-2"></i>
+                    <p>System health data not available</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- API Usage Statistics -->
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-bar"></i>
+                    API Usage (24h)
+                </h6>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary active" onclick="loadStats('24h')">24h</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="loadStats('7d')">7d</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="loadStats('30d')">30d</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="api-stats-content">
+                    {% if stats_24h %}
+                    {% set totals = stats_24h.totals %}
+                    <div class="row text-center mb-3">
+                        <div class="col-3">
+                            <div class="border-right">
+                                <h4 class="text-primary">{{ totals.requests or 0 }}</h4>
+                                <small class="text-muted">Total Requests</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="border-right">
+                                <h4 class="text-{{ 'danger' if totals.errors > 0 else 'success' }}">{{ totals.errors or
+                                    0 }}</h4>
+                                <small class="text-muted">Errors</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="border-right">
+                                <h4 class="text-info">{{ "%.2f"|format(totals.avg_response_time or 0) }}s</h4>
+                                <small class="text-muted">Avg Response</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <h4
+                                class="text-{{ 'danger' if totals.error_rate > 0.05 else 'warning' if totals.error_rate > 0.01 else 'success' }}">
+                                {{ "%.1f"|format((totals.error_rate or 0) * 100) }}%
+                            </h4>
+                            <small class="text-muted">Error Rate</small>
+                        </div>
+                    </div>
+
+                    <!-- Endpoint Breakdown -->
+                    <h6 class="text-secondary mb-3">Endpoint Breakdown</h6>
+                    {% for endpoint, stats in stats_24h.endpoints.items() %}
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>{{ endpoint.replace('_', ' ').title() }}</span>
+                            <span class="text-muted">{{ stats.requests or 0 }} requests</span>
+                        </div>
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar bg-primary"
+                                style="width: {{ (stats.requests / totals.requests * 100) if totals.requests > 0 else 0 }}%">
+                            </div>
+                        </div>
+                        {% if stats.errors > 0 %}
+                        <small class="text-danger">{{ stats.errors }} errors ({{ "%.1f"|format(stats.error_rate * 100)
+                            }}%)</small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                        <p>No API usage data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Errors -->
+{% if recent_errors %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Recent Errors
+                </h6>
+                <button class="btn btn-sm btn-outline-danger" onclick="clearErrors()">
+                    <i class="fas fa-trash"></i> Clear All
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Endpoint</th>
+                                <th>Message</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for error in recent_errors[:10] %}
+                            <tr>
+                                <td>
+                                    <small class="text-muted">{{ error.timestamp[:19] if error.timestamp else 'Unknown'
+                                        }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">{{ error.error_type or 'Unknown' }}</span>
+                                </td>
+                                <td>
+                                    <code>{{ error.endpoint or 'N/A' }}</code>
+                                </td>
+                                <td>
+                                    <span class="text-truncate" style="max-width: 300px;"
+                                        title="{{ error.error_message }}">
+                                        {{ error.error_message[:100] }}{{ '...' if error.error_message and
+                                        error.error_message|length > 100 else '' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if error.traceback %}
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                        onclick="showErrorDetails('{{ error.error_type }}', '{{ error.error_message }}', '{{ error.traceback }}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if recent_errors|length > 10 %}
+                <div class="text-center">
+                    <button class="btn btn-outline-primary" onclick="loadMoreErrors()">
+                        <i class="fas fa-plus"></i> Load More Errors
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Error Details Modal -->
+<div class="modal fade" id="errorDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Error Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="error-details-content"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .health-score-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        position: relative;
+        background: conic-gradient(#28a745 0deg, #28a745 calc(var(--score) * 3.6deg), #e9ecef calc(var(--score) * 3.6deg), #e9ecef 360deg);
+    }
+
+    .health-score-circle::before {
+        content: '';
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: white;
+    }
+
+    .health-score-text {
+        position: relative;
+        z-index: 1;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+
+    .border-right {
+        border-right: 1px solid #dee2e6;
+    }
+
+    .alert-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .progress {
+        height: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Set health score CSS variable
+    document.addEventListener('DOMContentLoaded', function () {
+        const healthCircle = document.querySelector('.health-score-circle');
+        if (healthCircle) {
+            const score = healthCircle.getAttribute('data-score') || 0;
+            healthCircle.style.setProperty('--score', score);
+
+            // Update color based on score
+            let color = '#28a745'; // Green
+            if (score < 70) color = '#ffc107'; // Yellow
+            if (score < 50) color = '#dc3545'; // Red
+
+            healthCircle.style.background = `conic-gradient(${color} 0deg, ${color} calc(${score} * 3.6deg), #e9ecef calc(${score} * 3.6deg), #e9ecef 360deg)`;
+        }
+    });
+
+    function refreshAllMetrics() {
+        location.reload();
+    }
+
+    function loadStats(timeframe) {
+        // Update active button
+        document.querySelectorAll('.btn-group .btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        // Load stats for timeframe
+        fetch(`{{ url_for('admin_panel.api_monitoring_stats', timeframe='') }}${timeframe}`)
+            .then(response => response.json())
+            .then(data => {
+                updateStatsDisplay(data);
+            })
+            .catch(error => {
+                console.error('Error loading stats:', error);
+            });
+    }
+
+    function updateStatsDisplay(stats) {
+        const content = document.getElementById('api-stats-content');
+        if (!stats.totals) {
+            content.innerHTML = '<div class="text-center text-muted"><p>No data available for this timeframe</p></div>';
+            return;
+        }
+
+        const totals = stats.totals;
+        const errorRateClass = totals.error_rate > 0.05 ? 'danger' : totals.error_rate > 0.01 ? 'warning' : 'success';
+
+        let html = `
+            <div class="row text-center mb-3">
+                <div class="col-3">
+                    <div class="border-right">
+                        <h4 class="text-primary">${totals.requests || 0}</h4>
+                        <small class="text-muted">Total Requests</small>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="border-right">
+                        <h4 class="text-${totals.errors > 0 ? 'danger' : 'success'}">${totals.errors || 0}</h4>
+                        <small class="text-muted">Errors</small>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="border-right">
+                        <h4 class="text-info">${(totals.avg_response_time || 0).toFixed(2)}s</h4>
+                        <small class="text-muted">Avg Response</small>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <h4 class="text-${errorRateClass}">
+                        ${((totals.error_rate || 0) * 100).toFixed(1)}%
+                    </h4>
+                    <small class="text-muted">Error Rate</small>
+                </div>
+            </div>
+            <h6 class="text-secondary mb-3">Endpoint Breakdown</h6>
+        `;
+
+        if (stats.endpoints) {
+            Object.entries(stats.endpoints).forEach(([endpoint, endpointStats]) => {
+                const percentage = totals.requests > 0 ? (endpointStats.requests / totals.requests * 100) : 0;
+                html += `
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>${endpoint.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                            <span class="text-muted">${endpointStats.requests || 0} requests</span>
+                        </div>
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar bg-primary" style="width: ${percentage}%"></div>
+                        </div>
+                        ${endpointStats.errors > 0 ? `<small class="text-danger">${endpointStats.errors} errors (${(endpointStats.error_rate * 100).toFixed(1)}%)</small>` : ''}
+                    </div>
+                `;
+            });
+        }
+
+        content.innerHTML = html;
+    }
+
+    function showErrorDetails(errorType, errorMessage, traceback) {
+        const content = document.getElementById('error-details-content');
+        content.innerHTML = `
+            <div class="mb-3">
+                <h6>Error Type</h6>
+                <span class="badge bg-danger">${errorType}</span>
+            </div>
+            <div class="mb-3">
+                <h6>Error Message</h6>
+                <p class="text-danger">${errorMessage}</p>
+            </div>
+            <div class="mb-3">
+                <h6>Traceback</h6>
+                <pre class="bg-light p-3" style="font-size: 0.8rem; max-height: 300px; overflow-y: auto;">${traceback}</pre>
+            </div>
+        `;
+
+        const modal = new bootstrap.Modal(document.getElementById('errorDetailsModal'));
+        modal.show();
+    }
+
+    function clearErrors() {
+        if (confirm('Are you sure you want to clear all error logs?')) {
+            // This would need to be implemented as an API endpoint
+            alert('Error clearing functionality would be implemented here');
+        }
+    }
+
+    function loadMoreErrors() {
+        // This would load more errors via AJAX
+        alert('Load more errors functionality would be implemented here');
+    }
+
+    function exportMetrics() {
+        // This would export metrics data
+        alert('Export functionality would be implemented here');
+    }
+
+    // Auto-refresh every 30 seconds
+    setInterval(function () {
+        // Refresh health data
+        fetch('{{ url_for("admin_panel.api_monitoring_health") }}')
+            .then(response => response.json())
+            .then(data => {
+                // Update health display if needed
+                console.log('Health data refreshed');
+            })
+            .catch(error => {
+                console.error('Error refreshing health data:', error);
+            });
+    }, 30000);
+</script>
+{% endblock %}

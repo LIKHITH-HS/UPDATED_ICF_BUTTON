@@ -1,0 +1,394 @@
+{% extends 'layout.html' %}
+
+{% block title %}Company Verification{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card bg-dark text-light border-secondary mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0"><i class="fas fa-building me-2"></i>Company Verification</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-light">
+                        Enter a company name to verify its registration status and claims. Our AI-powered system will 
+                        analyze whether the company is properly registered with relevant authorities and if its public 
+                        claims are supported by facts.
+                    </p>
+                    
+                    <form id="companyForm" class="mt-3" method="POST" action="/verify_company">
+                        <div class="form-group mb-3">
+                            <label for="companyName" class="form-label">Company Name</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" id="companyName" name="company_name"
+                                placeholder="Enter company name (e.g., Microsoft Corporation, Tesla Inc.)" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="verifyButton">
+                            <i class="fas fa-check-circle me-1"></i> Verify Company
+                        </button>
+                        <a href="/company_history" class="btn btn-secondary ms-2">
+                            <i class="fas fa-history me-1"></i> View History
+                        </a>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Results Card (initially hidden) -->
+            <div class="card bg-dark text-light border-secondary mb-4" id="resultsCard" style="display: none;">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Verification Results</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Cache flag indicator -->
+                    <div id="cacheFlag" style="display: none;"></div>
+                    
+                    <div class="alert d-flex align-items-center" id="resultsAlert" role="alert">
+                        <div id="statusIcon" class="me-3 fs-3">
+                            <!-- Icon will be inserted here -->
+                        </div>
+                        <div>
+                            <h5 class="mb-1" id="resultsTitle">Company Verification</h5>
+                            <p class="mb-0" id="resultsMessage">Please wait while we analyze the company information...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="card bg-darker border-secondary mb-3">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">Verification Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div id="summaryIcon" class="me-3 fs-3">
+                                        <!-- Icon will be inserted here -->
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1" id="summaryTitle">Company Status</h5>
+                                        <p class="mb-0" id="summaryDescription">Verification in progress...</p>
+                                    </div>
+                                </div>
+                                <div class="p-3 rounded border border-secondary mb-3" id="verificationSummary">
+                                    <!-- Descriptive summary will be inserted here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="card bg-darker border-secondary mb-3">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">Detailed Analysis</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="rounded p-3" id="analysisText" style="white-space: pre-wrap;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 row">
+                        <div class="col-md-6">
+                            <div class="card bg-darker border-secondary mb-3">
+                                <div class="card-header">Registration Status</div>
+                                <div class="card-body" id="registrationStatus">
+                                    <!-- Status will be inserted here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-darker border-secondary mb-3">
+                                <div class="card-header">Claims Verification</div>
+                                <div class="card-body" id="claimsStatus">
+                                    <!-- Status will be inserted here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6 class="mb-2 text-light">Verification Source:</h6>
+                        <p id="sourceInfo" class="mb-0"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading spinner (initially hidden) -->
+            <div class="text-center my-4" id="loadingSpinner" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-light">Analyzing company information...</p>
+            </div>
+
+            <!-- Error alert (initially hidden) -->
+            <div class="alert alert-danger alert-dismissible fade show" role="alert" id="errorAlert" style="display: none;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="errorMessage">An error occurred.</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" onclick="$('#errorAlert').hide();"></button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Handle form submission
+        $('#companyForm').submit(function(e) {
+            e.preventDefault();
+            
+            const companyName = $('#companyName').val().trim();
+            
+            if (!companyName) {
+                showError('Please enter a company name to verify.');
+                return;
+            }
+            
+            // Show loading spinner, hide results and error
+            $('#loadingSpinner').show();
+            $('#resultsCard').hide();
+            $('#errorAlert').hide();
+            
+            // Submit to server
+            // Create form data for submission
+            var formData = new FormData();
+            formData.append('company_name', companyName);
+            
+            console.log("Submitting company verification request with name:", companyName);
+            
+            // Use Fetch API instead of jQuery.ajax
+            fetch('/verify_company', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    // Don't set Content-Type for FormData, browser will set it with proper boundary
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Error verifying company');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                $('#loadingSpinner').hide();
+                
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                
+                displayResults(data);
+            })
+            .catch(error => {
+                $('#loadingSpinner').hide();
+                showError(error.message || 'An error occurred while verifying the company.');
+            });
+        });
+
+        // Function to display verification results
+        function displayResults(data) {
+            const result = data.result;
+            const source = data.source;
+            const message = data.message;
+            
+            // Update source info
+            let sourceText = '';
+            if (source === 'cache_exact') {
+                sourceText = 'Retrieved from cache (exact match)';
+            } else if (source === 'cache_similar') {
+                sourceText = 'Retrieved from cache (similar company)';
+            } else if (source === 'perplexity_api') {
+                sourceText = 'Verified with Perplexity AI';
+            } else {
+                sourceText = 'Unknown source';
+            }
+            $('#sourceInfo').text(sourceText);
+            
+            // Set verification status and styling
+            let alertClass = 'alert-info';
+            let icon = '<i class="fas fa-question-circle"></i>';
+            let title = 'Verification Result';
+            
+            if (result.is_registered === true) {
+                alertClass = 'alert-success';
+                icon = '<i class="fas fa-check-circle"></i>';
+                title = 'Registered Company';
+            } else if (result.is_registered === false) {
+                alertClass = 'alert-danger';
+                icon = '<i class="fas fa-exclamation-triangle"></i>';
+                title = 'Unregistered or Suspicious Company';
+            } else {
+                alertClass = 'alert-warning';
+                icon = '<i class="fas fa-info-circle"></i>';
+                title = 'Uncertain Verification';
+            }
+            
+            // Update UI elements
+            $('#resultsAlert').removeClass('alert-success alert-danger alert-warning alert-info').addClass(alertClass);
+            $('#statusIcon').html(icon);
+            $('#resultsTitle').text(title);
+            $('#resultsMessage').text(message);
+            
+            // Update the summary section with descriptive narrative
+            $('#summaryIcon').html(icon);
+            $('#summaryTitle').text(title);
+            
+            // Create a descriptive narrative description based on verification results
+            let summaryDescription = '';
+            if (result.is_registered === true) {
+                summaryDescription = `<strong>${result.company_name}</strong> is a properly registered and legitimate company.`;
+                if (result.claims_verified === true) {
+                    summaryDescription += ' Our verification process has confirmed that its public claims are credible and supported by evidence.';
+                } else if (result.claims_verified === false) {
+                    summaryDescription += ' However, some of its public claims could not be verified or may contain inaccuracies.';
+                }
+            } else if (result.is_registered === false) {
+                summaryDescription = `<strong>${result.company_name}</strong> does not appear to be properly registered.`;
+                if (result.claims_verified === false) {
+                    summaryDescription += ' Additionally, the public claims made by this entity could not be verified.';
+                }
+            } else {
+                summaryDescription = `We could not definitively determine if <strong>${result.company_name}</strong> is properly registered.`;
+                if (result.claims_verified === true) {
+                    summaryDescription += ' However, the public claims made by this entity appear to be credible.';
+                } else if (result.claims_verified === false) {
+                    summaryDescription += ' Additionally, the public claims made by this entity could not be verified.';
+                }
+            }
+            $('#summaryDescription').html(summaryDescription);
+            
+            // Create a more detailed verification summary with narrative format
+            let verificationNarrative = '';
+            
+            // Add source information
+            if (source === 'cache_exact' || source === 'cache_similar') {
+                verificationNarrative += '<p class="mb-3"><i class="fas fa-history text-info me-2"></i> This verification was retrieved from our database based on previous analysis.</p>';
+            }
+            
+            // Create a descriptive narrative about the company
+            verificationNarrative += '<p class="mb-2">';
+            if (result.is_registered === true) {
+                verificationNarrative += `Our analysis indicates that <strong>${result.company_name}</strong> is properly registered with relevant authorities. `;
+                
+                if (result.claims_verified === true) {
+                    verificationNarrative += 'The company\'s public statements and claims are generally supported by available evidence and can be considered reliable. ';
+                    verificationNarrative += 'This suggests a high level of credibility and transparency in their business operations.';
+                } else if (result.claims_verified === false) {
+                    verificationNarrative += 'However, our verification process found that some of the company\'s public statements or claims may not be fully supported by available evidence. ';
+                    verificationNarrative += 'We recommend exercising caution and conducting additional research before making important decisions based on this company\'s claims.';
+                } else {
+                    verificationNarrative += 'We were unable to conclusively verify the accuracy of their public claims and statements with the available information.';
+                }
+            } else if (result.is_registered === false) {
+                verificationNarrative += `Our analysis suggests that <strong>${result.company_name}</strong> may not be properly registered with relevant authorities. `;
+                verificationNarrative += 'This raises significant concerns about the legitimacy of this business entity. ';
+                
+                if (result.claims_verified === false) {
+                    verificationNarrative += 'Additionally, we found that public claims made by this entity are not well-supported by available evidence. ';
+                    verificationNarrative += 'We strongly recommend exercising extreme caution in any dealings with this entity.';
+                } else {
+                    verificationNarrative += 'We recommend verifying any information directly with official business registries before engaging with this entity.';
+                }
+            } else {
+                verificationNarrative += `We could not definitively determine whether <strong>${result.company_name}</strong> is properly registered with relevant authorities based on available information. `;
+                
+                if (result.claims_verified === true) {
+                    verificationNarrative += 'However, the public claims made by this entity appear to be generally supported by available evidence.';
+                } else if (result.claims_verified === false) {
+                    verificationNarrative += 'Additionally, we found that public claims made by this entity are not well-supported by available evidence. ';
+                    verificationNarrative += 'We recommend exercising caution when dealing with this entity.';
+                } else {
+                    verificationNarrative += 'We also could not conclusively verify their public claims with the available information. ';
+                    verificationNarrative += 'We recommend seeking additional information from official sources before making important decisions regarding this entity.';
+                }
+            }
+            verificationNarrative += '</p>';
+            
+            // Add verification date information in a readable format
+            const verificationDate = new Date(result.verification_date);
+            const formattedDate = verificationDate.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            verificationNarrative += `<p class="mb-0 text-muted"><small>Verification performed on ${formattedDate}. This information is based on available data at the time of verification and may change.</small></p>`;
+            
+            $('#verificationSummary').html(verificationNarrative);
+            
+            // Set analysis text with markdown formatting if needed
+            const responseText = result.response;
+            
+            // Check if the response contains markdown formatting
+            if (responseText.includes('#') || responseText.includes('*') || responseText.includes('```')) {
+                // Dynamically load marked.js if not already loaded
+                if (typeof marked === 'undefined') {
+                    $.getScript('https://cdn.jsdelivr.net/npm/marked/marked.min.js', function() {
+                        // Once loaded, render the markdown
+                        $('#analysisText').html(marked.parse(responseText));
+                    });
+                } else {
+                    // If already loaded, render the markdown
+                    $('#analysisText').html(marked.parse(responseText));
+                }
+            } else {
+                // No markdown, just set as text
+                $('#analysisText').text(responseText);
+            }
+            
+            // Registration status
+            let registrationHtml = '';
+            if (result.is_registered === true) {
+                registrationHtml = '<div class="text-success"><i class="fas fa-check-circle me-1"></i> Registered</div>';
+                registrationHtml += '<p class="mt-2 mb-0">This company appears to be properly registered with relevant authorities.</p>';
+            } else if (result.is_registered === false) {
+                registrationHtml = '<div class="text-danger"><i class="fas fa-times-circle me-1"></i> Not Registered</div>';
+                registrationHtml += '<p class="mt-2 mb-0">This company does not appear to be properly registered.</p>';
+            } else {
+                registrationHtml = '<div class="text-warning"><i class="fas fa-question-circle me-1"></i> Unknown</div>';
+                registrationHtml += '<p class="mt-2 mb-0">Registration status could not be determined with certainty.</p>';
+            }
+            $('#registrationStatus').html(registrationHtml);
+            
+            // Claims status
+            let claimsHtml = '';
+            if (result.claims_verified === true) {
+                claimsHtml = '<div class="text-success"><i class="fas fa-check-circle me-1"></i> Verified</div>';
+                claimsHtml += '<p class="mt-2 mb-0">Public claims made by this company appear to be supported by facts.</p>';
+            } else if (result.claims_verified === false) {
+                claimsHtml = '<div class="text-danger"><i class="fas fa-times-circle me-1"></i> Unverified</div>';
+                claimsHtml += '<p class="mt-2 mb-0">Public claims made by this company are not well-supported by facts.</p>';
+            } else {
+                claimsHtml = '<div class="text-warning"><i class="fas fa-question-circle me-1"></i> Unknown</div>';
+                claimsHtml += '<p class="mt-2 mb-0">Verification of company claims could not be determined with certainty.</p>';
+            }
+            $('#claimsStatus').html(claimsHtml);
+            
+            // Show cached flag if result is from cache
+            if (source === 'cache_exact' || source === 'cache_similar') {
+                // Add a cache flag to indicate this was a cached result
+                $('#cacheFlag').html('<div class="badge bg-info mb-2">This result was previously verified</div>');
+                $('#cacheFlag').show();
+            } else {
+                $('#cacheFlag').hide();
+            }
+            
+            // Show results card
+            $('#resultsCard').show();
+        }
+
+        // Function to show error messages
+        function showError(message) {
+            $('#errorMessage').text(message);
+            $('#errorAlert').show();
+        }
+    });
+</script>
+{% endblock %}

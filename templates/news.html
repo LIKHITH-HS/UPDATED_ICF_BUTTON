@@ -1,0 +1,433 @@
+{% extends "layout.html" %}
+
+{% block title %}News Verification - LinkSafety Shield{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8 text-center">
+        <div class="mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 20px;">
+                <i class="fa-solid fa-newspaper text-white" style="font-size: 2rem;"></i>
+            </div>
+            <h1 class="display-5 fw-bold mb-3">News Verification</h1>
+            <p class="lead text-muted">Verify news authenticity with AI-powered fact-checking and source analysis.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Main News Verification -->
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <i class="fa-solid fa-newspaper me-2"></i>
+                    <h4 class="mb-0">News Statement Analysis</h4>
+                </div>
+                <a href="{{ url_for('news_history') }}" class="btn btn-sm btn-outline-light">
+                    <i class="fa-solid fa-clock-rotate-left me-1"></i> History
+                </a>
+            </div>
+            <div class="card-body">
+                <form id="newsVerificationForm">
+                    <div class="mb-4">
+                        <label for="newsStatement" class="form-label">Enter news statement to verify</label>
+                        <textarea class="form-control" id="newsStatement" name="news_statement" 
+                            rows="4" placeholder="Example: The government announced new regulations for social media platforms..." required></textarea>
+                        <div class="form-text">Our AI will analyze this statement for accuracy, sources, and credibility.</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="verifyButton">
+                            <span class="spinner-border spinner-border-sm d-none" id="loadingSpinner" role="status" aria-hidden="true"></span>
+                            <i class="fa-solid fa-search me-2" id="buttonIcon"></i>
+                            <span id="buttonText">Analyze News Statement</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Results Card (initially hidden) -->
+        <div class="card mt-4 shadow-sm d-none" id="resultsCard">
+            <div class="card-body">
+                <div class="text-center mb-3" id="statusIcon">
+                    <!-- Icons will be inserted via JavaScript -->
+                </div>
+                <h4 class="card-title text-center" id="resultTitle"></h4>
+                <p class="card-text" id="resultMessage"></p>
+                <div class="alert mt-3" id="resultSource" role="alert"></div>
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <i class="fa-solid fa-robot me-2"></i> AI Analysis
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text" id="resultResponse"></p>
+                    </div>
+                </div>
+                <div class="d-grid gap-2 mt-3">
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                        Verify Another Statement
+                    </button>
+                    <a href="{{ url_for('news_history') }}" class="btn btn-outline-primary">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> View Verification History
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Error Alert (initially hidden) -->
+        <div class="alert alert-danger mt-4 d-none" id="errorAlert" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+            <button type="button" class="btn-close float-end" onclick="dismissError()"></button>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8 col-lg-6">
+        <div class="card bg-dark border-secondary shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">About News Verification</h5>
+                <p class="card-text">
+                    This tool uses natural language processing and AI to verify news statements. It helps you:
+                </p>
+                <ul class="list-group list-group-flush mb-3">
+                    <li class="list-group-item bg-dark border-secondary">
+                        <i class="fa-solid fa-check-circle me-2 text-success"></i> Identify fake news
+                    </li>
+                    <li class="list-group-item bg-dark border-secondary">
+                        <i class="fa-solid fa-info-circle me-2 text-info"></i> Find reliable sources
+                    </li>
+                    <li class="list-group-item bg-dark border-secondary">
+                        <i class="fa-solid fa-history me-2 text-warning"></i> See historical context
+                    </li>
+                    <li class="list-group-item bg-dark border-secondary">
+                        <i class="fa-solid fa-brain me-2 text-primary"></i> Get AI-powered analysis
+                    </li>
+                </ul>
+                <p class="card-text">
+                    Stay informed with verified information. Our system uses smart caching to speed up verifications of common queries.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Verifications Section -->
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-clock-rotate-left me-2"></i>
+                    Recent Verifications
+                </h5>
+            </div>
+            <div class="card-body p-0" id="recentVerificationsContainer">
+                <div class="text-center p-4" id="recentVerificationsLoading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading recent verifications...</p>
+                </div>
+                <ul class="list-group list-group-flush" id="recentVerificationsList">
+                    <!-- Recent verifications will be loaded here via JavaScript -->
+                </ul>
+                <div class="text-center p-4 d-none" id="noRecentVerifications">
+                    <p class="text-muted">No recent news verifications found.</p>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('news_history') }}" class="btn btn-sm btn-primary">
+                    View Full History
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load recent news verifications on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecentVerifications();
+    setupNewsVerificationForm();
+});
+
+// Function to load recent news verifications
+function loadRecentVerifications() {
+    const recentVerificationsContainer = document.getElementById('recentVerificationsContainer');
+    const recentVerificationsList = document.getElementById('recentVerificationsList');
+    const recentVerificationsLoading = document.getElementById('recentVerificationsLoading');
+    const noRecentVerifications = document.getElementById('noRecentVerifications');
+    
+    // Show loading indicator
+    recentVerificationsLoading.classList.remove('d-none');
+    noRecentVerifications.classList.add('d-none');
+    
+    // Fetch recent verifications from API
+    fetch('/api/news_history?limit=5')
+        .then(response => response.json())
+        .then(data => {
+            // Hide loading indicator
+            recentVerificationsLoading.classList.add('d-none');
+            
+            // Clear existing items
+            recentVerificationsList.innerHTML = '';
+            
+            // Check if there are any recent verifications
+            if (data.history && data.history.length > 0) {
+                // Add each verification to the list
+                data.history.forEach(verification => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'list-group-item';
+                    
+                    // Create query display with truncation
+                    const queryText = document.createElement('p');
+                    queryText.className = 'mb-1 text-truncate fw-bold';
+                    queryText.style.maxWidth = '100%';
+                    queryText.textContent = verification.original_query;
+                    queryText.title = verification.original_query;
+                    
+                    // Create date and status
+                    const metaDiv = document.createElement('div');
+                    metaDiv.className = 'd-flex justify-content-between align-items-center';
+                    
+                    const dateSpan = document.createElement('small');
+                    dateSpan.className = 'text-muted';
+                    const verificationDate = new Date(verification.verification_date);
+                    dateSpan.textContent = verificationDate.toLocaleString();
+                    
+                    // Create status badge
+                    const statusBadge = document.createElement('span');
+                    if (verification.is_real === true) {
+                        statusBadge.className = 'badge bg-success';
+                        statusBadge.textContent = 'Real';
+                    } else if (verification.is_real === false) {
+                        statusBadge.className = 'badge bg-danger';
+                        statusBadge.textContent = 'Fake';
+                    } else {
+                        statusBadge.className = 'badge bg-warning';
+                        statusBadge.textContent = 'Unverified';
+                    }
+                    
+                    // Add elements to meta div
+                    metaDiv.appendChild(dateSpan);
+                    metaDiv.appendChild(statusBadge);
+                    
+                    // Add elements to list item
+                    listItem.appendChild(queryText);
+                    listItem.appendChild(metaDiv);
+                    
+                    // Add list item to list
+                    recentVerificationsList.appendChild(listItem);
+                });
+            } else {
+                // Show no verifications message
+                noRecentVerifications.classList.remove('d-none');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading recent verifications:', error);
+            recentVerificationsLoading.classList.add('d-none');
+            
+            // Show error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger m-3';
+            errorDiv.textContent = 'Error loading recent verifications. Please try again later.';
+            
+            // Add error message to container
+            recentVerificationsContainer.appendChild(errorDiv);
+        });
+}
+
+// Function to set up the news verification form
+function setupNewsVerificationForm() {
+    const newsVerificationForm = document.getElementById('newsVerificationForm');
+    
+    if (newsVerificationForm) {
+        newsVerificationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            verifyNews();
+        });
+    }
+}
+
+/**
+ * Verify news statement by submitting form to backend
+ */
+function verifyNews() {
+    // Get form and UI elements
+    const newsStatement = document.getElementById('newsStatement');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const buttonText = document.getElementById('buttonText');
+    const verifyButton = document.getElementById('verifyButton');
+    const resultsCard = document.getElementById('resultsCard');
+    const errorAlert = document.getElementById('errorAlert');
+    
+    // Validate input
+    const statement = newsStatement.value.trim();
+    if (!statement) {
+        showError('Please enter a news statement to verify');
+        return;
+    }
+    
+    // Show loading state
+    loadingSpinner.classList.remove('d-none');
+    buttonText.textContent = 'Verifying...';
+    verifyButton.disabled = true;
+    resultsCard.classList.add('d-none');
+    errorAlert.classList.add('d-none');
+    
+    // Create form data for submission
+    const formData = new FormData();
+    formData.append('news_statement', statement);
+    
+    // Send request to backend
+    fetch('/verify_news', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'Error verifying news');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        displayVerificationResults(data);
+    })
+    .catch(error => {
+        showError(error.message || 'Error verifying news');
+    })
+    .finally(() => {
+        // Hide loading state
+        loadingSpinner.classList.add('d-none');
+        buttonText.textContent = 'Verify News';
+        verifyButton.disabled = false;
+    });
+}
+
+/**
+ * Display news verification results in the UI
+ * @param {Object} data - Results from the API
+ */
+function displayVerificationResults(data) {
+    const resultsCard = document.getElementById('resultsCard');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultMessage = document.getElementById('resultMessage');
+    const resultResponse = document.getElementById('resultResponse');
+    const resultSource = document.getElementById('resultSource');
+    const statusIcon = document.getElementById('statusIcon');
+    
+    // Show results card
+    resultsCard.classList.remove('d-none');
+    
+    // Handle error case
+    if (data.error) {
+        statusIcon.innerHTML = `
+            <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 4rem;"></i>
+        `;
+        resultTitle.textContent = 'Verification Error';
+        resultTitle.className = 'card-title text-center text-danger';
+        resultMessage.textContent = data.message || 'Error verifying news statement';
+        resultResponse.textContent = 'Unable to complete verification. Please try again later.';
+        resultSource.className = 'alert alert-danger';
+        resultSource.textContent = 'Error: API verification service unavailable';
+        return;
+    }
+    
+    // Get verification result
+    const result = data.result;
+    
+    // Update UI based on verification result
+    if (result.is_real === true) {
+        // Real news
+        statusIcon.innerHTML = `
+            <i class="fa-solid fa-check-circle text-success" style="font-size: 4rem;"></i>
+        `;
+        resultTitle.textContent = 'Verified: Likely Real News';
+        resultTitle.className = 'card-title text-center text-success';
+    } else if (result.is_real === false) {
+        // Fake news
+        statusIcon.innerHTML = `
+            <i class="fa-solid fa-times-circle text-danger" style="font-size: 4rem;"></i>
+        `;
+        resultTitle.textContent = 'Verified: Likely Fake News';
+        resultTitle.className = 'card-title text-center text-danger';
+    } else {
+        // Unknown or unclear
+        statusIcon.innerHTML = `
+            <i class="fa-solid fa-question-circle text-warning" style="font-size: 4rem;"></i>
+        `;
+        resultTitle.textContent = 'Verification Unclear';
+        resultTitle.className = 'card-title text-center text-warning';
+    }
+    
+    // Update verification source info
+    if (data.source === 'cache_exact') {
+        resultSource.className = 'alert alert-info';
+        resultSource.innerHTML = `<i class="fa-solid fa-database me-2"></i> This news statement has been verified before (exact match).`;
+    } else if (data.source === 'cache_similar') {
+        resultSource.className = 'alert alert-info';
+        resultSource.innerHTML = `<i class="fa-solid fa-database me-2"></i> This news statement is similar to previously verified content.`;
+    } else {
+        resultSource.className = 'alert alert-primary';
+        resultSource.innerHTML = `<i class="fa-solid fa-robot me-2"></i> This news statement was verified using AI analysis.`;
+    }
+    
+    // Update other result elements
+    resultMessage.textContent = data.message || '';
+    resultResponse.innerHTML = formatResponse(result.response || '');
+}
+
+/**
+ * Format response text with better presentation
+ * @param {string} text - The response text 
+ * @returns {string} Formatted HTML
+ */
+function formatResponse(text) {
+    // Replace newlines with paragraph breaks
+    return text.split('\n').filter(line => line.trim() !== '').map(para => `<p>${para}</p>`).join('');
+}
+
+/**
+ * Show error message in the UI
+ * @param {string} message - Error message to display
+ */
+function showError(message) {
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    errorMessage.textContent = message;
+    errorAlert.classList.remove('d-none');
+}
+
+/**
+ * Dismiss the error alert
+ */
+function dismissError() {
+    const errorAlert = document.getElementById('errorAlert');
+    errorAlert.classList.add('d-none');
+}
+
+/**
+ * Reset the form and hide results
+ */
+function resetForm() {
+    const newsStatement = document.getElementById('newsStatement');
+    const resultsCard = document.getElementById('resultsCard');
+    const errorAlert = document.getElementById('errorAlert');
+    
+    newsStatement.value = '';
+    resultsCard.classList.add('d-none');
+    errorAlert.classList.add('d-none');
+    newsStatement.focus();
+}
+</script>
+{% endblock %}

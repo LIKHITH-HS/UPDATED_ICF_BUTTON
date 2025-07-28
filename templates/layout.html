@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LinkSafety Shield - Comprehensive Security Verification{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    
+    <!-- Meta tags for SEO -->
+    <meta name="description" content="Comprehensive security verification platform for URLs, news, advertisements, and companies. Stay safe online with AI-powered analysis.">
+    <meta name="keywords" content="URL safety, news verification, ad verification, company verification, security, AI analysis">
+    
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <div class="d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 10px;">
+                    <i class="fa-solid fa-shield-halved text-white"></i>
+                </div>
+                <span class="fw-bold">LinkSafety Shield</span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fa-solid fa-house me-1"></i> URL Safety
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('news') }}">
+                            <i class="fa-solid fa-newspaper me-1"></i> News
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('ads') }}">
+                            <i class="fa-solid fa-ad me-1"></i> Ads
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('company') }}">
+                            <i class="fa-solid fa-building me-1"></i> Companies
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-clock-rotate-left me-1"></i> History
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('history') }}">
+                                <i class="fa-solid fa-shield-halved me-2"></i> URL History
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('news_history') }}">
+                                <i class="fa-solid fa-newspaper me-2"></i> News History
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('ads_history') }}">
+                                <i class="fa-solid fa-ad me-2"></i> Ad History
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('company_history') }}">
+                                <i class="fa-solid fa-building me-2"></i> Company History
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer mt-auto">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 8px;">
+                            <i class="fa-solid fa-shield-halved text-white" style="font-size: 0.875rem;"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold">LinkSafety Shield</div>
+                            <small class="text-muted">Powered by AI &copy; 2025</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-md-end justify-content-center mt-3 mt-md-0 flex-wrap gap-3">
+                        <a href="{{ url_for('index') }}" class="text-decoration-none">
+                            <i class="fa-solid fa-shield-halved me-1"></i> URL Safety
+                        </a>
+                        <a href="{{ url_for('news') }}" class="text-decoration-none">
+                            <i class="fa-solid fa-newspaper me-1"></i> News
+                        </a>
+                        <a href="{{ url_for('ads') }}" class="text-decoration-none">
+                            <i class="fa-solid fa-ad me-1"></i> Ads
+                        </a>
+                        <a href="{{ url_for('company') }}" class="text-decoration-none">
+                            <i class="fa-solid fa-building me-1"></i> Companies
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

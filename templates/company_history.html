@@ -1,0 +1,239 @@
+{% extends 'layout.html' %}
+
+{% block title %}Company Verification History{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-light"><i class="fas fa-history me-2"></i>Company Verification History</h2>
+                <div>
+                    <a href="/company" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Company Verification
+                    </a>
+                    <button class="btn btn-danger ms-2" id="clearHistoryBtn">
+                        <i class="fas fa-trash-alt me-1"></i> Clear History
+                    </button>
+                </div>
+            </div>
+
+            <!-- History Table -->
+            <div class="card bg-dark text-light border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Verification Records</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if verifications.items %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Company Name</th>
+                                        <th>Registration</th>
+                                        <th>Claims</th>
+                                        <th>Date</th>
+                                        <th>Source</th>
+                                        <th>Cache Hits</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for verification in verifications.items %}
+                                        <tr data-bs-toggle="collapse" data-bs-target="#details-{{ verification.id }}" role="button" aria-expanded="false" class="clickable-row">
+                                            <td>{{ verification.company_name }}</td>
+                                            <td>
+                                                {% if verification.is_registered == true %}
+                                                    <span class="badge bg-success">Registered</span>
+                                                {% elif verification.is_registered == false %}
+                                                    <span class="badge bg-danger">Unregistered</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning text-dark">Unknown</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if verification.claims_verified == true %}
+                                                    <span class="badge bg-success">Verified</span>
+                                                {% elif verification.claims_verified == false %}
+                                                    <span class="badge bg-danger">Unverified</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning text-dark">Unknown</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ verification.verification_date.strftime('%B %d, %Y %I:%M %p') }}</td>
+                                            <td>{{ verification.source }}</td>
+                                            <td>{{ verification.cached_hit }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="6" class="p-0">
+                                                <div class="collapse" id="details-{{ verification.id }}">
+                                                    <div class="p-3 bg-darker">
+                                                        <!-- More descriptive company verification details -->
+                                                        <div class="mb-3">
+                                                            <h5 class="mb-3">Verification Details for {{ verification.company_name }}</h5>
+                                                            
+                                                            <div class="mb-3">
+                                                                <div class="d-flex align-items-center mb-2">
+                                                                    {% if verification.is_registered == true %}
+                                                                        <div class="badge bg-success me-2">Registered Company</div>
+                                                                    {% elif verification.is_registered == false %}
+                                                                        <div class="badge bg-danger me-2">Unregistered Entity</div>
+                                                                    {% else %}
+                                                                        <div class="badge bg-warning text-dark me-2">Uncertain Status</div>
+                                                                    {% endif %}
+                                                                    
+                                                                    {% if verification.claims_verified == true %}
+                                                                        <div class="badge bg-success">Verified Claims</div>
+                                                                    {% elif verification.claims_verified == false %}
+                                                                        <div class="badge bg-danger">Unverified Claims</div>
+                                                                    {% else %}
+                                                                        <div class="badge bg-warning text-dark">Uncertain Claims</div>
+                                                                    {% endif %}
+                                                                </div>
+                                                                
+                                                                <!-- Descriptive summary text -->
+                                                                <div class="mb-3">
+                                                                    {% if verification.is_registered == true %}
+                                                                        <p>Our verification confirms that <strong>{{ verification.company_name }}</strong> is a properly registered and legitimate company.
+                                                                        {% if verification.claims_verified == true %}
+                                                                            The company's public claims and statements appear to be supported by facts and evidence.
+                                                                        {% elif verification.claims_verified == false %}
+                                                                            However, some of the company's public claims could not be verified or may contain inaccuracies.
+                                                                        {% endif %}
+                                                                        </p>
+                                                                    {% elif verification.is_registered == false %}
+                                                                        <p><strong>{{ verification.company_name }}</strong> does not appear to be properly registered with relevant authorities.
+                                                                        {% if verification.claims_verified == false %}
+                                                                            Additionally, public claims made by this entity could not be verified.
+                                                                        {% endif %}
+                                                                        </p>
+                                                                    {% else %}
+                                                                        <p>We could not definitively determine if <strong>{{ verification.company_name }}</strong> is properly registered.
+                                                                        {% if verification.claims_verified == true %}
+                                                                            However, the public claims made by this entity appear to be credible.
+                                                                        {% elif verification.claims_verified == false %}
+                                                                            The public claims made by this entity could not be properly verified.
+                                                                        {% endif %}
+                                                                        </p>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div class="mb-3">
+                                                                <h6 class="mb-2">Detailed Analysis:</h6>
+                                                                <div class="response-content border border-secondary rounded p-3" style="white-space: pre-wrap;">{{ verification.response }}</div>
+                                                            </div>
+                                                            
+                                                            <!-- Verification metadata -->
+                                                            <div class="d-flex justify-content-between mt-3">
+                                                                <small class="text-muted">Source: {{ verification.source }}</small>
+                                                                <small class="text-muted">Cache Hits: {{ verification.cached_hit }}</small>
+                                                                <small class="text-muted">Verified on: {{ verification.verification_date.strftime('%B %d, %Y %I:%M %p') }}</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="d-flex justify-content-center p-3">
+                            <nav aria-label="Verification history pagination">
+                                <ul class="pagination mb-0">
+                                    <li class="page-item {% if verifications.page == 1 %}disabled{% endif %}">
+                                        <a class="page-link" href="{{ url_for('company_history', page=verifications.prev_num) if verifications.has_prev else '#' }}">Previous</a>
+                                    </li>
+                                    
+                                    {% for page_num in range(1, verifications.pages + 1) %}
+                                        <li class="page-item {% if page_num == verifications.page %}active{% endif %}">
+                                            <a class="page-link" href="{{ url_for('company_history', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% endfor %}
+                                    
+                                    <li class="page-item {% if verifications.page == verifications.pages %}disabled{% endif %}">
+                                        <a class="page-link" href="{{ url_for('company_history', page=verifications.next_num) if verifications.has_next else '#' }}">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center">
+                            <p class="text-muted mb-0">No company verification history found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="clearHistoryModal" tabindex="-1" aria-labelledby="clearHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clearHistoryModalLabel">Confirm Clear History</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to clear all company verification history? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmClearBtn">Clear History</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Add markdown support for responses
+        // Load Marked.js library for markdown rendering
+        $.getScript('https://cdn.jsdelivr.net/npm/marked/marked.min.js', function() {
+            // Once loaded, process all response contents
+            $('.response-content').each(function() {
+                const content = $(this).text();
+                // Check if content has markdown
+                if (content.includes('#') || content.includes('*') || content.includes('```')) {
+                    $(this).html(marked.parse(content));
+                }
+            });
+        });
+        
+        // Click handler for clear history button
+        $('#clearHistoryBtn').click(function() {
+            $('#clearHistoryModal').modal('show');
+        });
+        
+        // Click handler for confirm clear button
+        $('#confirmClearBtn').click(function() {
+            // Send AJAX request to clear history
+            $.ajax({
+                url: '/clear_company_history',
+                type: 'POST',
+                success: function(response) {
+                    if (response.status === 'success' || response.success === true) {
+                        // Reload the page to show empty history
+                        location.reload();
+                    } else {
+                        alert('Error clearing history: ' + (response.message || 'Unknown error'));
+                    }
+                },
+                error: function() {
+                    alert('Error clearing history. Please try again.');
+                },
+                complete: function() {
+                    $('#clearHistoryModal').modal('hide');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,386 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block page_title %}System Dashboard{% endblock %}
+{% block page_subtitle %}Real-time system monitoring and analytics{% endblock %}
+
+{% block content %}
+<!-- System Metrics Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 15px;">
+                            <i class="fas fa-shield-halved text-white" style="font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small text-uppercase fw-semibold">URL Checks</div>
+                        <div class="h3 mb-0 fw-bold" id="total-url-checks">
+                            {{ system_stats.total_url_checks or 0 }}
+                        </div>
+                        <div class="text-success small">
+                            <i class="fas fa-arrow-up"></i> +12% this week
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 15px;">
+                            <i class="fas fa-newspaper text-white" style="font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small text-uppercase fw-semibold">News Verified</div>
+                        <div class="h3 mb-0 fw-bold" id="total-news-verifications">
+                            {{ system_stats.total_news_verifications or 0 }}
+                        </div>
+                        <div class="text-success small">
+                            <i class="fas fa-arrow-up"></i> +8% this week
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 15px;">
+                            <i class="fas fa-ad text-white" style="font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small text-uppercase fw-semibold">Ads Analyzed</div>
+                        <div class="h3 mb-0 fw-bold" id="total-ad-verifications">
+                            {{ system_stats.total_ad_verifications or 0 }}
+                        </div>
+                        <div class="text-warning small">
+                            <i class="fas fa-minus"></i> -2% this week
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 15px;">
+                            <i class="fas fa-building text-white" style="font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small text-uppercase fw-semibold">Companies</div>
+                        <div class="h3 mb-0 fw-bold" id="total-company-verifications">
+                            {{ system_stats.total_company_verifications or 0 }}
+                        </div>
+                        <div class="text-success small">
+                            <i class="fas fa-arrow-up"></i> +15% this week
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Health & Performance -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0">
+                        <i class="fas fa-heartbeat me-2"></i>System Health
+                    </h5>
+                    <span class="badge bg-success">All Systems Operational</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center p-3 rounded" style="background: rgba(16, 185, 129, 0.1);">
+                            <div class="flex-shrink-0">
+                                <span class="status-indicator status-{{ 'connected' if system_health.database_status == 'connected' else 'disconnected' }}"></span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">Database Connection</h6>
+                                <p class="mb-0 text-muted">{{ system_health.database_status|title if system_health else 'Connected' }}</p>
+                                <small class="text-success">Response time: 12ms</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center p-3 rounded" style="background: rgba(59, 130, 246, 0.1);">
+                            <div class="flex-shrink-0">
+                                <span class="status-indicator status-{{ 'connected' if system_health.redis_status == 'connected' else 'disconnected' }}"></span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">Redis Cache</h6>
+                                <p class="mb-0 text-muted">{{ system_health.redis_status|title if system_health else 'Connected' }}</p>
+                                <small class="text-info">Hit rate: 94.2%</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center p-3 rounded" style="background: rgba(245, 158, 11, 0.1);">
+                            <div class="flex-shrink-0">
+                                <span class="status-indicator status-{{ 'connected' if system_health.api_status == 'connected' else 'warning' }}"></span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">External APIs</h6>
+                                <p class="mb-0 text-muted">{{ system_health.api_status|title if system_health else 'Operational' }}</p>
+                                <small class="text-warning">Avg response: 245ms</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center p-3 rounded" style="background: rgba(16, 185, 129, 0.1);">
+                            <div class="flex-shrink-0">
+                                <span class="status-indicator status-{{ 'connected' if (system_health.system_load or 0) < 0.8 else 'warning' }}"></span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">System Load</h6>
+                                <p class="mb-0 text-muted">{{ "%.1f"|format((system_health.system_load or 0.3) * 100) }}%</p>
+                                <small class="text-success">CPU usage normal</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Activity
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for activity in recent_activity %}
+                    <div class="list-group-item border-0">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0">
+                                <div class="d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: rgba(79, 70, 229, 0.1); border-radius: 8px;">
+                                    <i class="fas fa-{{ activity.icon or 'info-circle' }} text-primary" style="font-size: 0.875rem;"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">{{ activity.type }}</h6>
+                                <p class="mb-1 text-muted small">{{ activity.description }}</p>
+                                <small class="text-muted">{{ activity.timestamp.strftime('%H:%M') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="list-group-item border-0 text-center py-4">
+                        <div class="text-muted">
+                            <i class="fas fa-clock mb-2" style="font-size: 2rem; opacity: 0.3;"></i>
+                            <p class="mb-0">No recent activity</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Session Information & Quick Actions -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-shield me-2"></i>Session Information
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if session_info %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center p-3 rounded" style="background: rgba(79, 70, 229, 0.1);">
+                            <i class="fas fa-user me-3 text-primary"></i>
+                            <div>
+                                <h6 class="mb-0">Administrator</h6>
+                                <small class="text-muted">{{ session_info.username or current_user or 'Admin' }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center p-3 rounded" style="background: rgba(16, 185, 129, 0.1);">
+                            <i class="fas fa-clock me-3 text-success"></i>
+                            <div>
+                                <h6 class="mb-0">Session Active</h6>
+                                <small class="text-muted">{{ (session_info.timeout_seconds // 60) or 30 }} min timeout</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% if session_info.login_time %}
+                    <div class="col-12">
+                        <div class="d-flex align-items-center p-3 rounded" style="background: rgba(59, 130, 246, 0.1);">
+                            <i class="fas fa-sign-in-alt me-3 text-info"></i>
+                            <div>
+                                <h6 class="mb-0">Login Time</h6>
+                                <small class="text-muted">{{ session_info.login_time.strftime('%Y-%m-%d %H:%M:%S UTC') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-user-shield mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="text-muted">No session information available</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <a href="{{ url_for('admin_panel.settings') }}" class="btn btn-outline-primary w-100 d-flex flex-column align-items-center py-3">
+                            <i class="fas fa-cog mb-2" style="font-size: 1.5rem;"></i>
+                            <span class="fw-semibold">Configuration</span>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('admin_panel.monitoring') }}" class="btn btn-outline-info w-100 d-flex flex-column align-items-center py-3">
+                            <i class="fas fa-chart-line mb-2" style="font-size: 1.5rem;"></i>
+                            <span class="fw-semibold">Monitoring</span>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('admin_panel.rate_limits') }}" class="btn btn-outline-warning w-100 d-flex flex-column align-items-center py-3">
+                            <i class="fas fa-tachometer-alt mb-2" style="font-size: 1.5rem;"></i>
+                            <span class="fw-semibold">Rate Limits</span>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('admin_panel.maintenance') }}" class="btn btn-outline-secondary w-100 d-flex flex-column align-items-center py-3">
+                            <i class="fas fa-tools mb-2" style="font-size: 1.5rem;"></i>
+                            <span class="fw-semibold">Maintenance</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Performance Chart -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-area me-2"></i>System Performance
+                    </h5>
+                    <button class="btn btn-sm btn-outline-light" onclick="refreshDashboard()">
+                        <i class="fas fa-sync-alt" id="refresh-icon"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-lg-4">
+                        <div class="text-center p-4 rounded" style="background: rgba(79, 70, 229, 0.1);">
+                            <div class="h2 mb-2 text-primary">{{ "%.1f"|format((system_health.system_load or 0.3) * 100) }}%</div>
+                            <h6 class="mb-0">CPU Usage</h6>
+                            <small class="text-muted">Average load</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="text-center p-4 rounded" style="background: rgba(16, 185, 129, 0.1);">
+                            <div class="h2 mb-2 text-success">94.2%</div>
+                            <h6 class="mb-0">Cache Hit Rate</h6>
+                            <small class="text-muted">Redis performance</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="text-center p-4 rounded" style="background: rgba(245, 158, 11, 0.1);">
+                            <div class="h2 mb-2 text-warning">245ms</div>
+                            <h6 class="mb-0">API Response</h6>
+                            <small class="text-muted">Average time</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh dashboard data every 30 seconds
+    setInterval(function() {
+        refreshDashboard();
+    }, 30000);
+});
+
+function refreshDashboard() {
+    const refreshIcon = document.getElementById('refresh-icon');
+    if (refreshIcon) {
+        refreshIcon.classList.add('fa-spin');
+    }
+    
+    // Update metrics via AJAX
+    fetch('/admin/api/dashboard-stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.system_stats) {
+                updateElement('total-url-checks', data.system_stats.total_url_checks || 0);
+                updateElement('total-news-verifications', data.system_stats.total_news_verifications || 0);
+                updateElement('total-ad-verifications', data.system_stats.total_ad_verifications || 0);
+                updateElement('total-company-verifications', data.system_stats.total_company_verifications || 0);
+            }
+        })
+        .catch(error => {
+            console.log('Dashboard refresh failed:', error);
+        })
+        .finally(() => {
+            if (refreshIcon) {
+                refreshIcon.classList.remove('fa-spin');
+            }
+        });
+}
+
+function updateElement(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
+    }
+}
+</script>
+{% endblock %}

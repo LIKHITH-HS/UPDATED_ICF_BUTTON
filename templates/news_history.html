@@ -1,0 +1,161 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fa-solid fa-history me-2"></i>
+                    News Verification History
+                </h4>
+                <div>
+                    <a href="{{ url_for('news') }}" class="btn btn-sm btn-outline-light me-2">
+                        <i class="fa-solid fa-newspaper me-1"></i> News Verification
+                    </a>
+                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#clearHistoryModal">
+                        <i class="fa-solid fa-trash me-1"></i> Clear History
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if verifications.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th scope="col">Statement</th>
+                                    <th scope="col">Verification</th>
+                                    <th scope="col">Source</th>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Cache Hits</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for verification in verifications.items %}
+                                <tr>
+                                    <td style="max-width: 300px;" class="text-truncate" title="{{ verification.original_query }}">
+                                        {{ verification.original_query }}
+                                    </td>
+                                    <td>
+                                        {% if verification.is_real == True %}
+                                            <span class="badge bg-success">Real</span>
+                                        {% elif verification.is_real == False %}
+                                            <span class="badge bg-danger">Fake</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Unverified</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ verification.source }}</td>
+                                    <td>{{ verification.verification_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ verification.cached_hit }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <nav aria-label="Verification history pagination" class="mt-3 p-3">
+                        <ul class="pagination justify-content-center">
+                            {% if verifications.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('news_history', page=verifications.prev_num) }}">Previous</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Previous</span>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in verifications.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                                {% if page_num %}
+                                    {% if page_num == verifications.page %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('news_history', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if verifications.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('news_history', page=verifications.next_num) }}">Next</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Next</span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% else %}
+                    <div class="text-center p-5">
+                        <i class="fa-solid fa-search fa-3x mb-3 text-muted"></i>
+                        <h5>No verification history found</h5>
+                        <p class="text-muted">Your verified news statements will appear here.</p>
+                        <a href="{{ url_for('news') }}" class="btn btn-primary mt-2">
+                            <i class="fa-solid fa-newspaper me-1"></i> Verify News
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clear History Modal -->
+<div class="modal fade" id="clearHistoryModal" tabindex="-1" aria-labelledby="clearHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="clearHistoryModalLabel">
+                    <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                    Confirm Clear History
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to clear all news verification history? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="clearNewsHistory()">Clear History</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * Clear all news verification history
+ */
+function clearNewsHistory() {
+    // Send request to clear history
+    fetch('/clear_news_history', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('clearHistoryModal'));
+        modal.hide();
+        
+        // Reload page to show updated history
+        window.location.reload();
+    })
+    .catch(error => {
+        console.error('Error clearing history:', error);
+        alert('Error clearing history. Please try again.');
+    });
+}
+</script>
+{% endblock %}

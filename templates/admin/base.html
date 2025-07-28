@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{% block title %}Admin Panel{% endblock %} - LinkSafety Shield</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --admin-primary: #4f46e5;
+            --admin-primary-hover: #4338ca;
+            --admin-secondary: #6b7280;
+            --admin-success: #10b981;
+            --admin-danger: #ef4444;
+            --admin-warning: #f59e0b;
+            --admin-info: #3b82f6;
+            --admin-dark: #1f2937;
+            --admin-darker: #111827;
+            --admin-light: #f9fafb;
+            --admin-muted: #9ca3af;
+            --admin-border: #374151;
+            --admin-sidebar-bg: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            --admin-content-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--admin-content-bg);
+            color: var(--admin-light);
+            line-height: 1.6;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background: var(--admin-sidebar-bg);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--admin-border);
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.5rem 1rem;
+            margin: 0.1rem 0.5rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+            font-size: 0.9rem;
+        }
+
+        .sidebar .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .sidebar .nav-link:hover::before {
+            left: 100%;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background: rgba(79, 70, 229, 0.2);
+            border-left: 3px solid var(--admin-primary);
+            transform: translateX(8px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .sidebar .nav-link.active {
+            background: rgba(79, 70, 229, 0.3);
+        }
+
+        .sidebar .nav-link i {
+            width: 20px;
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+
+        .admin-brand {
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--admin-border);
+            margin-bottom: 0.25rem;
+        }
+
+        .admin-brand h4 {
+            background: linear-gradient(135deg, var(--admin-primary), #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+
+        .main-content {
+            background: rgba(15, 23, 42, 0.5);
+            min-height: 100vh;
+            backdrop-filter: blur(10px);
+        }
+
+        .top-navbar {
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--admin-border);
+            padding: 0.75rem 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .card {
+            background: rgba(31, 41, 55, 0.8);
+            border: 1px solid var(--admin-border);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border-color: rgba(79, 70, 229, 0.3);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--admin-primary), var(--admin-primary-hover));
+            border-bottom: none;
+            border-radius: 1rem 1rem 0 0 !important;
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            box-shadow: 0 0 8px currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .status-connected { 
+            background-color: var(--admin-success);
+            color: var(--admin-success);
+        }
+        .status-disconnected { 
+            background-color: var(--admin-danger);
+            color: var(--admin-danger);
+        }
+        .status-warning { 
+            background-color: var(--admin-warning);
+            color: var(--admin-warning);
+        }
+
+        .session-info {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 0.75rem;
+            backdrop-filter: blur(10px);
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left-color: var(--admin-success);
+            color: #d1fae5;
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: var(--admin-danger);
+            color: #fecaca;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left-color: var(--admin-warning);
+            color: #fef3c7;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-left-color: var(--admin-info);
+            color: #dbeafe;
+        }
+
+        .btn {
+            border-radius: 0.75rem;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--admin-primary), var(--admin-primary-hover));
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--admin-primary-hover), #3730a3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+
+        .form-control, .form-select {
+            background: rgba(17, 24, 39, 0.8);
+            border: 2px solid var(--admin-border);
+            border-radius: 0.75rem;
+            color: var(--admin-light);
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: rgba(17, 24, 39, 0.95);
+            border-color: var(--admin-primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            color: var(--admin-light);
+        }
+
+        .table {
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background: rgba(31, 41, 55, 0.6);
+        }
+
+        .table th {
+            background: rgba(79, 70, 229, 0.1);
+            border-color: var(--admin-border);
+            font-weight: 600;
+        }
+
+        .table td {
+            border-color: var(--admin-border);
+        }
+
+        .footer {
+            background: rgba(31, 41, 55, 0.8);
+            border-top: 1px solid var(--admin-border);
+            padding: 1.5rem 0;
+            margin-top: 3rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .dropdown-menu {
+            background: rgba(31, 41, 55, 0.95);
+            border: 1px solid var(--admin-border);
+            border-radius: 0.75rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .dropdown-item {
+            color: var(--admin-light);
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(79, 70, 229, 0.2);
+            color: white;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                position: fixed;
+                z-index: 1050;
+                width: 280px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        /* Loading animations */
+        .spinner-border {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--admin-darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--admin-border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--admin-secondary);
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse" id="sidebarMenu">
+                <div class="position-sticky pt-3">
+                    <div class="admin-brand text-center">
+                        <div class="d-flex align-items-center justify-content-center mb-2">
+                            <div class="d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 10px;">
+                                <i class="fas fa-shield-alt text-white"></i>
+                            </div>
+                        </div>
+                        <h4>LinkSafety Shield</h4>
+                        <small class="text-white-50">Administration</small>
+                    </div>
+                    
+                    {% if current_user %}
+                    <div class="session-info text-center">
+                        <div class="d-flex align-items-center justify-content-center mb-2">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <span>{{ current_user }}</span>
+                        </div>
+                        {% if session_info and session_info.expires_at %}
+                        <small>Session expires: {{ session_info.expires_at.strftime('%H:%M') }}</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin_panel.dashboard' %}active{% endif %}" 
+                               href="{{ url_for('admin_panel.dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin_panel.monitoring' %}active{% endif %}" 
+                               href="{{ url_for('admin_panel.monitoring') }}">
+                                <i class="fas fa-chart-line"></i>
+                                System Monitor
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin_panel.rate_limits' %}active{% endif %}" 
+                               href="{{ url_for('admin_panel.rate_limits') }}">
+                                <i class="fas fa-stopwatch"></i>
+                                Rate Limits
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin_panel.settings' %}active{% endif %}" 
+                               href="{{ url_for('admin_panel.settings') }}">
+                                <i class="fas fa-cog"></i>
+                                Configuration
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin_panel.fine_tuning' %}active{% endif %}" 
+                               href="{{ url_for('admin_panel.fine_tuning') }}">
+                                <i class="fas fa-brain"></i>
+                                AI Fine Tuning
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin_panel.maintenance' %}active{% endif %}" 
+                               href="{{ url_for('admin_panel.maintenance') }}">
+                                <i class="fas fa-tools"></i>
+                                Maintenance
+                            </a>
+                        </li>
+
+                        
+                        <!-- Divider -->
+                        <li class="nav-item mt-4 pt-3" style="border-top: 1px solid var(--admin-border);">
+                            <a class="nav-link" href="{{ url_for('index') }}" target="_blank">
+                                <i class="fas fa-external-link-alt"></i>
+                                View Site
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-warning" href="{{ url_for('admin_panel.logout') }}">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Sign Out
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <!-- Mobile menu button -->
+                <button class="btn btn-outline-light d-md-none mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+                    <i class="fas fa-bars"></i> Menu
+                </button>
+
+                <!-- Top navbar -->
+                <div class="top-navbar">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center">
+                        <div>
+                            <h1 class="h2 mb-0">{% block page_title %}Admin Dashboard{% endblock %}</h1>
+                            <small class="text-muted">{% block page_subtitle %}System administration and monitoring{% endblock %}</small>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Enhanced Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show enhanced-notification" 
+                                 role="alert">
+                                <div class="d-flex align-items-start">
+                                    <div class="notification-icon me-3">
+                                        {% if category == 'error' %}
+                                            <i class="fas fa-exclamation-triangle fa-lg"></i>
+                                        {% elif category == 'success' %}
+                                            <i class="fas fa-check-circle fa-lg"></i>
+                                        {% elif category == 'warning' %}
+                                            <i class="fas fa-exclamation-circle fa-lg"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle fa-lg"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="notification-content flex-grow-1">
+                                        <div class="notification-title fw-bold">{{ category.title() }}</div>
+                                        <div class="notification-message">{{ message }}</div>
+                                    </div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Page content -->
+                {% block content %}{% endblock %}
+
+                <!-- Footer -->
+                <footer class="footer mt-auto">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">
+                                    LinkSafetyShield Admin Panel &copy; 2025
+                                </small>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <small class="text-muted">
+                                    <span id="current-time"></span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Common admin panel JavaScript -->
+    <script>
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Refresh button functionality (only if button exists)
+        const refreshBtn = document.getElementById('refresh-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function() {
+                location.reload();
+            });
+        }
+
+        // Auto-dismiss alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+
+        // CSRF token for AJAX requests
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Common AJAX setup
+        function makeAjaxRequest(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'X-CSRF-Token': csrfToken,
+                    'Content-Type': 'application/json'
+                }
+            };
+            return fetch(url, { ...defaultOptions, ...options });
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

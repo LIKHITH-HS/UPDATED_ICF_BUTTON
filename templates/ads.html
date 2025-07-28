@@ -1,0 +1,403 @@
+{% extends 'layout.html' %}
+
+{% block title %}Ad Verification{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card bg-dark text-light border-secondary mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0"><i class="fas fa-ad me-2"></i>Advertisement Verification</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-light">
+                        Enter the advertisement text you want to verify. Our AI-powered system will analyze it for credibility 
+                        and determine if it's genuinely associated with the mentioned company or potentially misleading.
+                    </p>
+                    
+                    <form id="adForm" class="mt-3" method="POST" action="/verify_ad">
+                        <div class="form-group mb-3">
+                            <label for="adText" class="form-label">Advertisement Text</label>
+                            <textarea class="form-control bg-dark text-light border-secondary" id="adText" name="ad_text" rows="5" 
+                                placeholder="Enter the advertisement text here..." required></textarea>
+                        </div>
+                        
+                        <!-- Sample ad examples for quick testing -->
+                        <div class="mb-3">
+                            <p class="text-light mb-2"><small>Quick Test: Try one of these sample advertisements:</small></p>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary sample-ad" 
+                                    data-ad="Get 50% off all Apple products today only! Visit apple.com/special-offer to claim your discount.">
+                                    Apple Sale Ad
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary sample-ad" 
+                                    data-ad="Tesla announces free supercharging for life with purchase of new Model 3. Limited time offer, visit tesla.com/free-supercharging.">
+                                    Tesla Offer Ad
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary sample-ad" 
+                                    data-ad="Amazon Prime Day: 90% off all electronics! One day only sale for Prime members. Visit amazon-special-deals.net to access.">
+                                    Suspicious Amazon Ad
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary" id="verifyButton">
+                            <i class="fas fa-check-circle me-1"></i> Verify Advertisement
+                        </button>
+                        <a href="/ads_history" class="btn btn-secondary ms-2">
+                            <i class="fas fa-history me-1"></i> View History
+                        </a>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Results Card (initially hidden) -->
+            <div class="card bg-dark text-light border-secondary mb-4" id="resultsCard" style="display: none;">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Advertisement Verification Results</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Cache flag will appear here when result comes from cache -->
+                    <div id="cacheFlag" style="display: none;"></div>
+                    
+                    <div class="alert d-flex align-items-center" id="resultsAlert" role="alert">
+                        <div id="statusIcon" class="me-3 fs-3">
+                            <!-- Icon will be inserted here -->
+                        </div>
+                        <div>
+                            <h5 class="mb-1" id="resultsTitle">Advertisement Verification</h5>
+                            <p class="mb-0" id="resultsMessage">Please wait while we analyze the advertisement...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Verification Summary Section (new) -->
+                    <div class="mt-3">
+                        <div class="card bg-darker border-secondary mb-3">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">Verification Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div id="summaryIcon" class="me-3 fs-3">
+                                        <!-- Icon will be inserted here -->
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1" id="summaryTitle">Advertisement Status</h5>
+                                        <p class="mb-0" id="summaryDescription">Verification in progress...</p>
+                                    </div>
+                                </div>
+                                <div class="p-3 rounded border border-secondary mb-3" id="verificationSummary">
+                                    <!-- Descriptive summary will be inserted here -->
+                                </div>
+                                
+                                <!-- Company mention (if any) -->
+                                <div id="companySection" style="display: none;" class="mt-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-building me-2 text-info"></i>
+                                        <h6 class="mb-0">Mentioned Company: <span id="companyName" class="fw-normal"></span></h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis Section (improved) -->
+                    <div class="mt-3">
+                        <div class="card bg-darker border-secondary mb-3">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">Detailed Analysis</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="rounded p-3" id="analysisText" style="white-space: pre-wrap;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Source Info (improved) -->
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0 text-light">Verification Source: <span id="sourceInfo" class="text-muted ms-2"></span></h6>
+                            </div>
+                            <div id="dateBadge" class="text-muted">
+                                <small>Analyzed <span id="verificationDate"></span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading spinner (initially hidden) -->
+            <div class="text-center my-4 d-none" id="loadingSpinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-light">Analyzing advertisement...</p>
+            </div>
+
+            <!-- Error alert (initially hidden) -->
+            <div class="alert alert-danger alert-dismissible fade show" role="alert" id="errorAlert" style="display: none;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="errorMessage">An error occurred.</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" onclick="$('#errorAlert').hide();"></button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Handle form submission
+        $('#adForm').submit(function(e) {
+            e.preventDefault();
+            
+            const adText = $('#adText').val().trim();
+            
+            if (!adText) {
+                showError('Please enter an advertisement to verify.');
+                return;
+            }
+            
+            // Show loading spinner, hide results and error
+            $('#loadingSpinner').removeClass('d-none');
+            $('#resultsCard').hide();
+            $('#errorAlert').hide();
+            $('#cacheFlag').hide();
+            
+            // Submit to server
+            // Create form data for submission
+            var formData = new FormData();
+            formData.append('ad_text', adText);
+            
+            // Use Fetch API instead of jQuery.ajax
+            console.log("Submitting ad verification request with:", adText);
+            fetch('/verify_ad', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    // Don't set Content-Type for FormData, browser will set it with proper boundary
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Error verifying advertisement');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                $('#loadingSpinner').hide();
+                
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                
+                displayResults(data);
+            })
+            .catch(error => {
+                $('#loadingSpinner').hide();
+                showError(error.message || 'An error occurred while verifying the advertisement.');
+            });
+        });
+
+        // Sample ad button click handlers
+        $('.sample-ad').click(function() {
+            const adText = $(this).data('ad');
+            $('#adText').val(adText);
+            // Highlight the active sample
+            $('.sample-ad').removeClass('btn-secondary').addClass('btn-outline-secondary');
+            $(this).removeClass('btn-outline-secondary').addClass('btn-secondary');
+        });
+        
+        // Function to display verification results
+        function displayResults(data) {
+            const result = data.result;
+            const source = data.source;
+            const message = data.message;
+            
+            // Update source info
+            let sourceText = '';
+            if (source === 'cache_exact') {
+                sourceText = 'Retrieved from cache (exact match)';
+            } else if (source === 'cache_similar') {
+                sourceText = 'Retrieved from cache (similar advertisement)';
+            } else if (source === 'perplexity_api') {
+                sourceText = 'Verified with Perplexity AI';
+            } else {
+                sourceText = 'Unknown source';
+            }
+            $('#sourceInfo').text(sourceText);
+            
+            // Set verification status and styling
+            let alertClass = 'alert-info';
+            let icon = '<i class="fas fa-question-circle"></i>';
+            let title = 'Verification Result';
+            
+            if (result.is_trustworthy === true) {
+                alertClass = 'alert-success';
+                icon = '<i class="fas fa-check-circle"></i>';
+                title = 'Trustworthy Advertisement';
+            } else if (result.is_trustworthy === false) {
+                alertClass = 'alert-danger';
+                icon = '<i class="fas fa-exclamation-triangle"></i>';
+                title = 'Potentially Misleading Advertisement';
+            } else {
+                alertClass = 'alert-warning';
+                icon = '<i class="fas fa-info-circle"></i>';
+                title = 'Uncertain Verification';
+            }
+            
+            // Create a descriptive narrative about the advertisement
+            let detailedMessage = '';
+            if (result.is_trustworthy === true) {
+                detailedMessage = `This advertisement appears to be legitimate`;
+                if (result.mentioned_company) {
+                    detailedMessage += ` and genuinely associated with ${result.mentioned_company}`;
+                }
+                detailedMessage += '.';
+            } else if (result.is_trustworthy === false) {
+                detailedMessage = `This advertisement may be misleading`;
+                if (result.mentioned_company) {
+                    detailedMessage += ` and not officially associated with ${result.mentioned_company}`;
+                }
+                detailedMessage += '.';
+            } else {
+                detailedMessage = `We couldn't fully determine the credibility of this advertisement`;
+                if (result.mentioned_company) {
+                    detailedMessage += ` mentioning ${result.mentioned_company}`;
+                }
+                detailedMessage += '.';
+            }
+            
+            // Update UI elements
+            $('#resultsAlert').removeClass('alert-success alert-danger alert-warning alert-info').addClass(alertClass);
+            $('#statusIcon').html(icon);
+            $('#resultsTitle').text(title);
+            $('#resultsMessage').text(detailedMessage);
+            
+            // Update the summary section with descriptive narrative
+            $('#summaryIcon').html(icon);
+            $('#summaryTitle').text(title);
+            $('#summaryDescription').text(detailedMessage);
+            
+            // Create a detailed verification summary with narrative format
+            let verificationNarrative = '';
+            
+            // Add source information
+            if (source === 'cache_exact' || source === 'cache_similar') {
+                verificationNarrative += '<p class="mb-3"><i class="fas fa-history text-info me-2"></i> This verification was retrieved from our database based on previous analysis.</p>';
+            }
+            
+            // Create a descriptive narrative about the advertisement
+            verificationNarrative += '<p class="mb-2">';
+            
+            // First section about the ad itself
+            verificationNarrative += 'We analyzed this advertisement';
+            if (result.mentioned_company) {
+                verificationNarrative += ` mentioning <strong>${result.mentioned_company}</strong>`;
+            }
+            verificationNarrative += ' for credibility and accuracy. ';
+            
+            // Second section about the verification results
+            if (result.is_trustworthy === true) {
+                verificationNarrative += 'Our verification indicates that this appears to be a <strong>legitimate advertisement</strong>. ';
+                
+                if (result.mentioned_company) {
+                    verificationNarrative += `The content is consistent with official messaging from ${result.mentioned_company} and does not contain misleading claims. `;
+                    verificationNarrative += 'The advertisement appears to be genuinely associated with the company and accurately represents their products or services.';
+                } else {
+                    verificationNarrative += 'The advertisement does not contain misleading or deceptive content and appears to accurately represent the offered products or services.';
+                }
+            } else if (result.is_trustworthy === false) {
+                verificationNarrative += 'Our verification indicates that this may be a <strong>misleading advertisement</strong>. ';
+                
+                if (result.mentioned_company) {
+                    verificationNarrative += `The content does not appear to be officially associated with ${result.mentioned_company} and may misrepresent their products or services. `;
+                    verificationNarrative += 'This advertisement may be using the company name without authorization or making claims that are not consistent with official communications.';
+                } else {
+                    verificationNarrative += 'The advertisement contains potentially deceptive elements or makes claims that cannot be verified. We recommend exercising caution before engaging with this advertisement.';
+                }
+            } else {
+                verificationNarrative += 'Our verification yielded <strong>inconclusive results</strong> regarding this advertisement. ';
+                
+                if (result.mentioned_company) {
+                    verificationNarrative += `While the advertisement mentions ${result.mentioned_company}, we could not definitively determine if it is officially associated with the company. `;
+                } 
+                
+                verificationNarrative += 'We recommend seeking additional information or verification before making any decisions based on this advertisement.';
+            }
+            verificationNarrative += '</p>';
+            
+            // Add verification date information in a readable format
+            const verificationDate = new Date(result.verification_date);
+            const formattedDate = verificationDate.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Add the formatted date to the date badge
+            $('#verificationDate').text(formattedDate);
+            
+            verificationNarrative += `<p class="mb-0 text-muted"><small>Our analysis is based on available information at the time of verification and may not account for recent changes. Use this information as a guide only.</small></p>`;
+            
+            $('#verificationSummary').html(verificationNarrative);
+            
+            // Show cached flag if result is from cache (as specified in the document)
+            if (source === 'cache_exact' || source === 'cache_similar') {
+                // Add a cache flag to indicate this was a cached result
+                $('#cacheFlag').html('<div class="badge bg-info mb-2">This result was previously verified</div>');
+                $('#cacheFlag').show();
+            } else {
+                $('#cacheFlag').hide();
+            }
+            
+            // Set analysis text with markdown formatting if needed
+            const responseText = result.response;
+            
+            // Check if the response contains markdown formatting
+            if (responseText.includes('#') || responseText.includes('*') || responseText.includes('```')) {
+                // Dynamically load marked.js if not already loaded
+                if (typeof marked === 'undefined') {
+                    $.getScript('https://cdn.jsdelivr.net/npm/marked/marked.min.js', function() {
+                        // Once loaded, render the markdown
+                        $('#analysisText').html(marked.parse(responseText));
+                    });
+                } else {
+                    // If already loaded, render the markdown
+                    $('#analysisText').html(marked.parse(responseText));
+                }
+            } else {
+                // No markdown, just set as text
+                $('#analysisText').text(responseText);
+            }
+            
+            // Company info if available
+            if (result.mentioned_company) {
+                $('#companyName').text(result.mentioned_company);
+                $('#companySection').show();
+            } else {
+                $('#companySection').hide();
+            }
+            
+            // Show results card
+            $('#resultsCard').show();
+        }
+
+        // Function to show error messages
+        function showError(message) {
+            $('#errorMessage').text(message);
+            $('#errorAlert').show();
+        }
+    });
+</script>
+{% endblock %}

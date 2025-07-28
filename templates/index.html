@@ -1,0 +1,333 @@
+{% extends "layout.html" %}
+
+{% block title %}URL Safety Checker - LinkSafety Shield{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8 text-center">
+        <div class="mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 20px;">
+                <i class="fa-solid fa-shield-halved text-white" style="font-size: 2rem;"></i>
+            </div>
+            <h1 class="display-5 fw-bold mb-3">Stay Safe Online</h1>
+            <p class="lead text-muted">Comprehensive security verification for URLs, news, advertisements, and companies using advanced AI analysis.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Main URL Checker -->
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <i class="fa-solid fa-link me-2"></i>
+                    <h4 class="mb-0">URL Safety Checker</h4>
+                </div>
+                <a href="{{ url_for('history') }}" class="btn btn-sm btn-outline-light">
+                    <i class="fa-solid fa-clock-rotate-left me-1"></i> History
+                </a>
+            </div>
+            <div class="card-body">
+                <form id="urlCheckForm">
+                    <div class="mb-4">
+                        <label for="url" class="form-label">Enter URL to verify</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-globe"></i></span>
+                            <input type="url" class="form-control" id="url" name="url" 
+                                placeholder="https://example.com or suspicious-link.com" required>
+                        </div>
+                        <div class="form-text">We'll analyze this URL for malware, phishing, and other security threats.</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="checkButton">
+                            <span class="spinner-border spinner-border-sm d-none" id="loadingSpinner" role="status" aria-hidden="true"></span>
+                            <i class="fa-solid fa-shield-halved me-2" id="buttonIcon"></i>
+                            <span id="buttonText">Analyze URL Security</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Results Card (initially hidden) -->
+        <div class="card mt-4 d-none" id="resultsCard">
+            <div class="card-body">
+                <div class="text-center mb-4" id="statusIcon">
+                    <!-- Icons will be inserted via JavaScript -->
+                </div>
+                <h4 class="card-title text-center mb-3" id="resultTitle"></h4>
+                <div class="alert mb-4" id="recommendationAlert" role="alert">
+                    <div class="d-flex align-items-start">
+                        <div class="me-3" id="alertIcon"></div>
+                        <div>
+                            <h6 class="alert-heading mb-2" id="alertTitle"></h6>
+                            <p class="mb-0" id="resultMessage"></p>
+                            <p class="mb-0 mt-2" id="resultDetails"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                        <i class="fa-solid fa-rotate-right me-2"></i>Check Another URL
+                    </button>
+                    <a href="{{ url_for('history') }}" class="btn btn-outline-primary">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> View Check History
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Error Alert (initially hidden) -->
+        <div class="alert alert-danger mt-4 d-none" id="errorAlert" role="alert">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+                <button type="button" class="btn-close" onclick="dismissError()"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-10">
+        <div class="row g-4">
+            <!-- URL Safety Feature -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 15px;">
+                            <i class="fa-solid fa-shield-halved text-white" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h5 class="card-title">URL Protection</h5>
+                        <p class="card-text text-muted">Detect malware, phishing, and suspicious links before you click.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- News Verification Feature -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 15px;">
+                            <i class="fa-solid fa-newspaper text-white" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h5 class="card-title">News Verification</h5>
+                        <p class="card-text text-muted">Verify news authenticity with AI-powered fact-checking.</p>
+                        <a href="{{ url_for('news') }}" class="btn btn-sm btn-outline-primary mt-2">Try Now</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ad Verification Feature -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 15px;">
+                            <i class="fa-solid fa-ad text-white" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h5 class="card-title">Ad Analysis</h5>
+                        <p class="card-text text-muted">Identify misleading advertisements and scam offers.</p>
+                        <a href="{{ url_for('ads') }}" class="btn btn-sm btn-outline-primary mt-2">Try Now</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Company Verification Feature -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 15px;">
+                            <i class="fa-solid fa-building text-white" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h5 class="card-title">Company Check</h5>
+                        <p class="card-text text-muted">Verify company legitimacy and registration status.</p>
+                        <a href="{{ url_for('company') }}" class="btn btn-sm btn-outline-primary mt-2">Try Now</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Security Info Section -->
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <i class="fa-solid fa-info-circle me-2"></i>
+                    <h5 class="mb-0">How Our Security Analysis Works</h5>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-semibold mb-3">Threat Detection</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fa-solid fa-virus me-2 text-danger"></i>
+                                <strong>Malware:</strong> Malicious software distribution
+                            </li>
+                            <li class="mb-2">
+                                <i class="fa-solid fa-user-secret me-2 text-danger"></i>
+                                <strong>Phishing:</strong> Identity theft attempts
+                            </li>
+                            <li class="mb-2">
+                                <i class="fa-solid fa-download me-2 text-warning"></i>
+                                <strong>Unwanted Software:</strong> Potentially harmful downloads
+                            </li>
+                            <li class="mb-2">
+                                <i class="fa-solid fa-bug me-2 text-warning"></i>
+                                <strong>Suspicious Activity:</strong> Unusual behavior patterns
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-semibold mb-3">AI-Powered Analysis</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fa-solid fa-database me-2 text-info"></i>
+                                <strong>Smart Caching:</strong> Fast results for known threats
+                            </li>
+                            <li class="mb-2">
+                                <i class="fa-solid fa-brain me-2 text-info"></i>
+                                <strong>Machine Learning:</strong> Advanced pattern recognition
+                            </li>
+                            <li class="mb-2">
+                                <i class="fa-solid fa-shield-halved me-2 text-success"></i>
+                                <strong>Real-time:</strong> Up-to-date threat intelligence
+                            </li>
+                            <li class="mb-2">
+                                <i class="fa-solid fa-chart-line me-2 text-success"></i>
+                                <strong>Continuous:</strong> Always improving accuracy
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Checks Section -->
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <i class="fa-solid fa-clock-rotate-left me-2"></i>
+                    <h5 class="mb-0">Recent Security Checks</h5>
+                </div>
+            </div>
+            <div class="card-body p-0" id="recentChecksContainer">
+                <div class="text-center p-4" id="recentChecksLoading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading recent checks...</p>
+                </div>
+                <ul class="list-group list-group-flush" id="recentChecksList">
+                    <!-- Recent checks will be loaded here via JavaScript -->
+                </ul>
+                <div class="text-center p-4 d-none" id="noRecentChecks">
+                    <div class="text-muted">
+                        <i class="fa-solid fa-clock-rotate-left mb-2" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="mb-0">No recent URL checks found.</p>
+                        <small>Start by checking a URL above!</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('history') }}" class="btn btn-primary">
+                    <i class="fa-solid fa-history me-1"></i> View Full History
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load recent URL checks on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecentChecks();
+});
+
+// Function to load recent URL checks
+function loadRecentChecks() {
+    const recentChecksContainer = document.getElementById('recentChecksContainer');
+    const recentChecksList = document.getElementById('recentChecksList');
+    const recentChecksLoading = document.getElementById('recentChecksLoading');
+    const noRecentChecks = document.getElementById('noRecentChecks');
+    
+    // Show loading indicator
+    recentChecksLoading.classList.remove('d-none');
+    noRecentChecks.classList.add('d-none');
+    
+    // Fetch recent checks from API
+    fetch('/api/history?limit=5')
+        .then(response => response.json())
+        .then(data => {
+            // Hide loading indicator
+            recentChecksLoading.classList.add('d-none');
+            
+            // Clear existing items
+            recentChecksList.innerHTML = '';
+            
+            // Check if there are any recent checks
+            if (data.history && data.history.length > 0) {
+                // Add each check to the list
+                data.history.forEach(check => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    
+                    // Create URL display with truncation
+                    const urlDiv = document.createElement('div');
+                    urlDiv.className = 'text-truncate';
+                    urlDiv.style.maxWidth = '70%';
+                    
+                    const urlLink = document.createElement('a');
+                    urlLink.href = check.url;
+                    urlLink.target = '_blank';
+                    urlLink.rel = 'noopener noreferrer';
+                    urlLink.textContent = check.url;
+                    urlLink.title = check.url;
+                    
+                    urlDiv.appendChild(urlLink);
+                    
+                    // Create status badge
+                    const statusBadge = document.createElement('span');
+                    statusBadge.className = check.is_safe ? 'badge bg-success' : 'badge bg-danger';
+                    statusBadge.textContent = check.is_safe ? 'Safe' : 'Unsafe';
+                    
+                    // Add elements to list item
+                    listItem.appendChild(urlDiv);
+                    listItem.appendChild(statusBadge);
+                    
+                    // Add list item to list
+                    recentChecksList.appendChild(listItem);
+                });
+            } else {
+                // Show no checks message
+                noRecentChecks.classList.remove('d-none');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading recent checks:', error);
+            recentChecksLoading.classList.add('d-none');
+            
+            // Show error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger m-3';
+            errorDiv.textContent = 'Error loading recent checks. Please try again later.';
+            
+            // Add error message to container
+            recentChecksContainer.appendChild(errorDiv);
+        });
+}
+</script>
+{% endblock %}

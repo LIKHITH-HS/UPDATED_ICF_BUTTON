@@ -1,0 +1,629 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Fine Tuning{% endblock %}
+{% block page_title %}AI Prompt Fine Tuning{% endblock %}
+{% block page_subtitle %}Manage and optimize AI prompts for each verification service{% endblock %}
+
+{% block content %}
+<!-- Service Overview Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-4 col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="d-inline-flex align-items-center justify-content-center mb-3"
+                    style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 15px;">
+                    <i class="fas fa-newspaper text-white" style="font-size: 1.5rem;"></i>
+                </div>
+                <h6 class="fw-semibold">News Verification</h6>
+                <p class="text-muted small mb-2">{{ prompt_stats.news.total_requests or 0 }} requests</p>
+                <span class="badge bg-{{ 'success' if prompt_stats.news.accuracy > 0.8 else 'warning' }}">
+                    {{ "%.1f"|format((prompt_stats.news.accuracy or 0.75) * 100) }}% accuracy
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="d-inline-flex align-items-center justify-content-center mb-3"
+                    style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 15px;">
+                    <i class="fas fa-ad text-white" style="font-size: 1.5rem;"></i>
+                </div>
+                <h6 class="fw-semibold">Ad Verification</h6>
+                <p class="text-muted small mb-2">{{ prompt_stats.ads.total_requests or 0 }} requests</p>
+                <span class="badge bg-{{ 'success' if prompt_stats.ads.accuracy > 0.8 else 'warning' }}">
+                    {{ "%.1f"|format((prompt_stats.ads.accuracy or 0.82) * 100) }}% accuracy
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="d-inline-flex align-items-center justify-content-center mb-3"
+                    style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 15px;">
+                    <i class="fas fa-building text-white" style="font-size: 1.5rem;"></i>
+                </div>
+                <h6 class="fw-semibold">Company Verification</h6>
+                <p class="text-muted small mb-2">{{ prompt_stats.company.total_requests or 0 }} requests</p>
+                <span class="badge bg-{{ 'success' if prompt_stats.company.accuracy > 0.8 else 'warning' }}">
+                    {{ "%.1f"|format((prompt_stats.company.accuracy or 0.78) * 100) }}% accuracy
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Fine Tuning Panel -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-brain me-2"></i>
+                        <h5 class="mb-0">AI Prompt Management</h5>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary btn-sm" onclick="testAllPrompts()">
+                            <i class="fas fa-flask"></i> Test All
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="exportPrompts()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm" onclick="resetToDefaults()">
+                            <i class="fas fa-undo"></i> Reset All
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Service Tabs -->
+                <div class="d-flex flex-wrap gap-2 mb-4" id="serviceTabs" role="tablist">
+                    <button class="btn btn-outline-primary active" id="news-tab" data-bs-toggle="tab" 
+                        data-bs-target="#news" type="button" role="tab" style="border-radius: 2rem; padding: 0.75rem 1.5rem;">
+                        <i class="fas fa-newspaper me-2"></i>News Verification
+                    </button>
+                    <button class="btn btn-outline-primary" id="ads-tab" data-bs-toggle="tab" 
+                        data-bs-target="#ads" type="button" role="tab" style="border-radius: 2rem; padding: 0.75rem 1.5rem;">
+                        <i class="fas fa-ad me-2"></i>Ad Verification
+                    </button>
+                    <button class="btn btn-outline-primary" id="company-tab" data-bs-toggle="tab" 
+                        data-bs-target="#company" type="button" role="tab" style="border-radius: 2rem; padding: 0.75rem 1.5rem;">
+                        <i class="fas fa-building me-2"></i>Company Verification
+                    </button>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="serviceTabContent">
+                    <!-- News Verification Tab -->
+                    <div class="tab-pane fade show active" id="news" role="tabpanel">
+                        <form id="newsPromptForm" onsubmit="savePrompt(event, 'news')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="service" value="news">
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="news_system_prompt" class="form-label">
+                                            <i class="fas fa-cog"></i> System Prompt
+                                        </label>
+                                        <textarea class="form-control" name="system_prompt" id="news_system_prompt" 
+                                            rows="6" placeholder="Define the AI's role and behavior...">{{ prompts.news.system_prompt or 'You are a news verification assistant. Analyze news statements and determine if they are real or fake. Be objective and provide evidence.' }}</textarea>
+                                        <small class="form-text text-muted">Sets the AI's role and general behavior</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="news_user_template" class="form-label">
+                                            <i class="fas fa-user"></i> User Prompt Template
+                                        </label>
+                                        <textarea class="form-control" name="user_template" id="news_user_template" 
+                                            rows="6" placeholder="Template for user queries...">{{ prompts.news.user_template or 'Is the following news real or fake? Please verify the credibility with explanation: "{input}"' }}</textarea>
+                                        <small class="form-text text-muted">Use {input} as placeholder for user input</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="news_temperature" class="form-label">Temperature</label>
+                                        <input type="range" class="form-range" name="temperature" id="news_temperature" 
+                                            min="0" max="1" step="0.1" value="{{ prompts.news.temperature or 0.2 }}"
+                                            oninput="updateRangeValue('news_temperature', this.value)">
+                                        <div class="d-flex justify-content-between">
+                                            <small>Focused</small>
+                                            <small id="news_temperature_value">{{ prompts.news.temperature or 0.2 }}</small>
+                                            <small>Creative</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="news_max_tokens" class="form-label">Max Tokens</label>
+                                        <input type="number" class="form-control" name="max_tokens" id="news_max_tokens" 
+                                            value="{{ prompts.news.max_tokens or 500 }}" min="100" max="2000">
+                                        <small class="form-text text-muted">Response length limit</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="news_enabled" class="form-label">Status</label>
+                                        <select class="form-select" name="enabled" id="news_enabled">
+                                            <option value="true" {{ 'selected' if prompts.news.enabled != False else '' }}>Enabled</option>
+                                            <option value="false" {{ 'selected' if prompts.news.enabled == False else '' }}>Disabled</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-info" onclick="testPrompt('news')">
+                                    <i class="fas fa-flask"></i> Test Prompt
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save News Prompts
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Ad Verification Tab -->
+                    <div class="tab-pane fade" id="ads" role="tabpanel">
+                        <form id="adsPromptForm" onsubmit="savePrompt(event, 'ads')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="service" value="ads">
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="ads_system_prompt" class="form-label">
+                                            <i class="fas fa-cog"></i> System Prompt
+                                        </label>
+                                        <textarea class="form-control" name="system_prompt" id="ads_system_prompt" 
+                                            rows="8" placeholder="Define the AI's role and behavior...">{{ prompts.ads.system_prompt or 'You are an expert ad verification assistant. Analyze advertisements for credibility, authenticity, and potential misleading claims. \nBe precise and concise in your analysis. Structure your response in these sections:\n1. Analysis: Provide a clear assessment of the advertisement\n2. Company Association: Note if the ad appears genuinely connected to any mentioned companies\n3. Red Flags: List any suspicious elements (if present)\n4. Verdict: Clearly state if the ad is \'trustworthy\', \'misleading\', or \'uncertain\'' }}</textarea>
+                                        <small class="form-text text-muted">Detailed system prompt for ad analysis</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="ads_user_template" class="form-label">
+                                            <i class="fas fa-user"></i> User Prompt Template
+                                        </label>
+                                        <textarea class="form-control" name="user_template" id="ads_user_template" 
+                                            rows="8" placeholder="Template for user queries...">{{ prompts.ads.user_template or 'Please verify the credibility and trustworthiness of this advertisement:\n\n"{input}"\n\nAnalyze whether it is genuinely associated with any mentioned company or contains misleading elements. Consider:\n- Unrealistic claims or offers that seem "too good to be true"\n- Discrepancies between the ad content and known company practices\n- Unusual URLs or contact information\n- Urgent or high-pressure tactics\n- Poor grammar or unprofessional presentation (for established companies)\n\nIs this a legitimate advertisement or potentially misleading?' }}</textarea>
+                                        <small class="form-text text-muted">Comprehensive ad verification template</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="ads_temperature" class="form-label">Temperature</label>
+                                        <input type="range" class="form-range" name="temperature" id="ads_temperature" 
+                                            min="0" max="1" step="0.1" value="{{ prompts.ads.temperature or 0.2 }}"
+                                            oninput="updateRangeValue('ads_temperature', this.value)">
+                                        <div class="d-flex justify-content-between">
+                                            <small>Focused</small>
+                                            <small id="ads_temperature_value">{{ prompts.ads.temperature or 0.2 }}</small>
+                                            <small>Creative</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="ads_max_tokens" class="form-label">Max Tokens</label>
+                                        <input type="number" class="form-control" name="max_tokens" id="ads_max_tokens" 
+                                            value="{{ prompts.ads.max_tokens or 1024 }}" min="100" max="2000">
+                                        <small class="form-text text-muted">Response length limit</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="ads_enabled" class="form-label">Status</label>
+                                        <select class="form-select" name="enabled" id="ads_enabled">
+                                            <option value="true" {{ 'selected' if prompts.ads.enabled != False else '' }}>Enabled</option>
+                                            <option value="false" {{ 'selected' if prompts.ads.enabled == False else '' }}>Disabled</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-info" onclick="testPrompt('ads')">
+                                    <i class="fas fa-flask"></i> Test Prompt
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Ad Prompts
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Company Verification Tab -->
+                    <div class="tab-pane fade" id="company" role="tabpanel">
+                        <form id="companyPromptForm" onsubmit="savePrompt(event, 'company')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="service" value="company">
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="company_system_prompt" class="form-label">
+                                            <i class="fas fa-cog"></i> System Prompt
+                                        </label>
+                                        <textarea class="form-control" name="system_prompt" id="company_system_prompt" 
+                                            rows="6" placeholder="Define the AI's role and behavior...">{{ prompts.company.system_prompt or 'Be precise and concise.' }}</textarea>
+                                        <small class="form-text text-muted">System prompt for company verification</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="company_user_template" class="form-label">
+                                            <i class="fas fa-user"></i> User Prompt Template
+                                        </label>
+                                        <textarea class="form-control" name="user_template" id="company_user_template" 
+                                            rows="6" placeholder="Template for user queries...">{{ prompts.company.user_template or 'Is the following company properly registered and legitimate? \nPlease verify if it\'s a real business entity and if its public claims are credible.\nCompany name: "{input}"' }}</textarea>
+                                        <small class="form-text text-muted">Company verification template</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="company_temperature" class="form-label">Temperature</label>
+                                        <input type="range" class="form-range" name="temperature" id="company_temperature" 
+                                            min="0" max="1" step="0.1" value="{{ prompts.company.temperature or 0.2 }}"
+                                            oninput="updateRangeValue('company_temperature', this.value)">
+                                        <div class="d-flex justify-content-between">
+                                            <small>Focused</small>
+                                            <small id="company_temperature_value">{{ prompts.company.temperature or 0.2 }}</small>
+                                            <small>Creative</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="company_max_tokens" class="form-label">Max Tokens</label>
+                                        <input type="number" class="form-control" name="max_tokens" id="company_max_tokens" 
+                                            value="{{ prompts.company.max_tokens or 1024 }}" min="100" max="2000">
+                                        <small class="form-text text-muted">Response length limit</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="company_enabled" class="form-label">Status</label>
+                                        <select class="form-select" name="enabled" id="company_enabled">
+                                            <option value="true" {{ 'selected' if prompts.company.enabled != False else '' }}>Enabled</option>
+                                            <option value="false" {{ 'selected' if prompts.company.enabled == False else '' }}>Disabled</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-info" onclick="testPrompt('company')">
+                                    <i class="fas fa-flask"></i> Test Prompt
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Company Prompts
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Results Modal -->
+<div class="modal fade" id="testResultsModal" tabindex="-1" aria-labelledby="testResultsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="testResultsModalLabel">
+                    <i class="fas fa-flask"></i> Prompt Test Results
+                </h5>
+                <button type="button" class="btn-close" onclick="closeTestModal()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="testResults">
+                    <!-- Test results will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeTestModal()">Close</button>
+                <button type="button" class="btn btn-primary" onclick="applyTestResults()">Apply Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tab functionality
+    const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    function showTab(targetId, activeButton) {
+        tabPanes.forEach(pane => {
+            pane.classList.remove('show', 'active');
+        });
+        tabButtons.forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        const targetPane = document.getElementById(targetId);
+        if (targetPane) {
+            targetPane.classList.add('show', 'active');
+        }
+        activeButton.classList.add('active');
+    }
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('data-bs-target').substring(1);
+            showTab(targetId, this);
+        });
+    });
+});
+
+function updateRangeValue(rangeId, value) {
+    document.getElementById(rangeId + '_value').textContent = value;
+}
+
+function savePrompt(event, service) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const button = form.querySelector('button[type="submit"]');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    button.disabled = true;
+    
+    fetch('/admin/fine-tuning/save', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showAlert('success', `${service.charAt(0).toUpperCase() + service.slice(1)} prompts saved successfully!`);
+        } else {
+            showAlert('error', data.message || 'Error saving prompts');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error saving prompts');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function testPrompt(service) {
+    const testInput = prompt(`Enter test input for ${service} verification:`);
+    if (!testInput) return;
+    
+    const formData = new FormData();
+    formData.append('csrf_token', '{{ csrf_token }}');
+    formData.append('service', service);
+    formData.append('test_input', testInput);
+    
+    // Get current form values
+    const form = document.getElementById(service + 'PromptForm');
+    const currentFormData = new FormData(form);
+    for (let [key, value] of currentFormData.entries()) {
+        formData.append(key, value);
+    }
+    
+    fetch('/admin/fine-tuning/test', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        showTestResults(service, testInput, data);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error testing prompt');
+    });
+}
+
+function showTestResults(service, input, results) {
+    const modalElement = document.getElementById('testResultsModal');
+    const resultsDiv = document.getElementById('testResults');
+    
+    resultsDiv.innerHTML = `
+        <div class="mb-3">
+            <h6>Service: ${service.charAt(0).toUpperCase() + service.slice(1)} Verification</h6>
+            <p><strong>Test Input:</strong> ${input}</p>
+        </div>
+        <div class="mb-3">
+            <h6>AI Response:</h6>
+            <div class="p-3 bg-light rounded">
+                ${results.response || 'No response received'}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Performance Metrics:</h6>
+                <ul class="list-unstyled">
+                    <li><strong>Response Time:</strong> ${results.response_time || 'N/A'}ms</li>
+                    <li><strong>Token Usage:</strong> ${results.tokens_used || 'N/A'}</li>
+                    <li><strong>Cost:</strong> $${results.estimated_cost || '0.00'}</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>Quality Score:</h6>
+                <div class="progress mb-2">
+                    <div class="progress-bar" style="width: ${(results.quality_score || 75)}%">
+                        ${(results.quality_score || 75)}%
+                    </div>
+                </div>
+                <small class="text-muted">Based on response relevance and structure</small>
+            </div>
+        </div>
+    `;
+    
+    // Initialize and show modal with proper Bootstrap 5 syntax
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+    });
+    
+    modal.show();
+    
+    // Add event listener to properly dispose modal when hidden
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        modal.dispose();
+    }, { once: true });
+}
+
+function testAllPrompts() {
+    showAlert('info', 'Testing all prompts... This may take a moment.');
+    
+    fetch('/admin/fine-tuning/test-all', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showAlert('success', 'All prompts tested successfully!');
+            // Optionally refresh the page to show updated stats
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showAlert('error', data.message || 'Error testing prompts');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error testing prompts');
+    });
+}
+
+function exportPrompts() {
+    window.location.href = '/admin/fine-tuning/export';
+}
+
+function resetToDefaults() {
+    if (!confirm('Are you sure you want to reset all prompts to default values? This cannot be undone.')) {
+        return;
+    }
+    
+    fetch('/admin/fine-tuning/reset', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showAlert('success', 'All prompts reset to defaults!');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('error', data.message || 'Error resetting prompts');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error resetting prompts');
+    });
+}
+
+function closeTestModal() {
+    console.log('Closing test modal...');
+    
+    try {
+        const modalElement = document.getElementById('testResultsModal');
+        
+        // Force hide modal immediately
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('show', 'fade');
+        modalElement.setAttribute('aria-hidden', 'true');
+        modalElement.removeAttribute('aria-modal');
+        
+        // Remove modal-open class from body
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Remove all modal backdrops
+        document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+            backdrop.remove();
+        });
+        
+        // Try to dispose Bootstrap modal instance
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.dispose();
+        }
+        
+        console.log('Modal closed successfully');
+        
+    } catch (error) {
+        console.error('Error closing modal:', error);
+        
+        // Nuclear option: force everything closed
+        const modalElement = document.getElementById('testResultsModal');
+        if (modalElement) {
+            modalElement.style.display = 'none';
+            modalElement.classList.remove('show', 'fade');
+        }
+        
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Remove all possible backdrop elements
+        document.querySelectorAll('.modal-backdrop, .fade, .show').forEach(el => {
+            if (el.classList.contains('modal-backdrop')) {
+                el.remove();
+            }
+        });
+        
+        console.log('Modal force-closed');
+    }
+}
+
+function applyTestResults() {
+    // Placeholder function for applying test results
+    showAlert('info', 'Apply changes functionality coming soon!');
+    closeTestModal();
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

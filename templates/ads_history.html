@@ -1,0 +1,159 @@
+{% extends 'layout.html' %}
+
+{% block title %}Ad Verification History{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-light"><i class="fas fa-history me-2"></i>Ad Verification History</h2>
+                <div>
+                    <a href="/ads" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Ad Verification
+                    </a>
+                    <button class="btn btn-danger ms-2" id="clearHistoryBtn">
+                        <i class="fas fa-trash-alt me-1"></i> Clear History
+                    </button>
+                </div>
+            </div>
+
+            <!-- History Table -->
+            <div class="card bg-dark text-light border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Verification Records</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if verifications.items %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Ad Content</th>
+                                        <th>Status</th>
+                                        <th>Company</th>
+                                        <th>Date</th>
+                                        <th>Source</th>
+                                        <th>Cache Hits</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for verification in verifications.items %}
+                                        <tr data-bs-toggle="collapse" data-bs-target="#details-{{ verification.id }}" role="button" aria-expanded="false" class="clickable-row">
+                                            <td>{{ verification.original_ad|truncate(50) }}</td>
+                                            <td>
+                                                {% if verification.is_trustworthy == true %}
+                                                    <span class="badge bg-success">Trustworthy</span>
+                                                {% elif verification.is_trustworthy == false %}
+                                                    <span class="badge bg-danger">Misleading</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning text-dark">Uncertain</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ verification.mentioned_company or 'Unknown' }}</td>
+                                            <td>{{ verification.verification_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>{{ verification.source }}</td>
+                                            <td>{{ verification.cached_hit }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="6" class="p-0">
+                                                <div class="collapse" id="details-{{ verification.id }}">
+                                                    <div class="p-3 bg-darker">
+                                                        <h6 class="mb-2">Full Ad Content:</h6>
+                                                        <p>{{ verification.original_ad }}</p>
+                                                        <h6 class="mb-2">Analysis:</h6>
+                                                        <div style="white-space: pre-wrap;">{{ verification.response }}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="d-flex justify-content-center p-3">
+                            <nav aria-label="Verification history pagination">
+                                <ul class="pagination mb-0">
+                                    <li class="page-item {% if verifications.page == 1 %}disabled{% endif %}">
+                                        <a class="page-link" href="{{ url_for('ads_history', page=verifications.prev_num) if verifications.has_prev else '#' }}">Previous</a>
+                                    </li>
+                                    
+                                    {% for page_num in range(1, verifications.pages + 1) %}
+                                        <li class="page-item {% if page_num == verifications.page %}active{% endif %}">
+                                            <a class="page-link" href="{{ url_for('ads_history', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% endfor %}
+                                    
+                                    <li class="page-item {% if verifications.page == verifications.pages %}disabled{% endif %}">
+                                        <a class="page-link" href="{{ url_for('ads_history', page=verifications.next_num) if verifications.has_next else '#' }}">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center">
+                            <p class="text-muted mb-0">No ad verification history found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="clearHistoryModal" tabindex="-1" aria-labelledby="clearHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clearHistoryModalLabel">Confirm Clear History</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to clear all ad verification history? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmClearBtn">Clear History</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Click handler for clear history button
+        $('#clearHistoryBtn').click(function() {
+            $('#clearHistoryModal').modal('show');
+        });
+        
+        // Click handler for confirm clear button
+        $('#confirmClearBtn').click(function() {
+            // Send AJAX request to clear history
+            $.ajax({
+                url: '/clear_ads_history',
+                type: 'POST',
+                success: function(response) {
+                    if (response.status === 'success' || response.success === true) {
+                        // Reload the page to show empty history
+                        location.reload();
+                    } else {
+                        alert('Error clearing history: ' + (response.message || 'Unknown error'));
+                    }
+                },
+                error: function() {
+                    alert('Error clearing history. Please try again.');
+                },
+                complete: function() {
+                    $('#clearHistoryModal').modal('hide');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
