@@ -1,5 +1,5 @@
 flask==2.3.2
-Flask-Limiter==2.8.2  # Note the uppercase 'F' and 'L'
+flask-limiter==3.12
 pillow==9.5.0
 gunicorn==20.1.0
 python-dotenv==1.0.0
