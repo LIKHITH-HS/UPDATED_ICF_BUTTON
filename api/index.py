@@ -13,3 +13,5 @@ def handler(event, context):
         "headers": {"Content-Type": "application/json"},
         "body": '{"status": "running"}'
     }
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
